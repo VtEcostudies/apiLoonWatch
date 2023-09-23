@@ -43,6 +43,8 @@ function jwt() {
             { url: /^\/parcel\/townId\/.*/, methods: ['GET'] },
             { url: /^\/parcel\/townName\/.*/, methods: ['GET'] },
 
+            { url: /^\/loonwatch\/*/, methods: ['GET'] },
+
             { url: /^\/survey\/columns/, methods: ['GET'] },
             { url: /^\/survey/, methods: ['GET'] },
             { url: /^\/survey\/.*/, methods: ['GET'] },

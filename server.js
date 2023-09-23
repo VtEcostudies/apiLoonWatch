@@ -16,7 +16,7 @@ var apiServerConfig = {
   host: 'localhost',
 }
 var debug = false;
-var noJwt = true;
+var noJwt = false; //turn off web token security
 
 switch(env.api_env) {
   default:
