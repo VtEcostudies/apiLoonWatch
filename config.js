@@ -1,0 +1,57 @@
+﻿const secrets = require('./secrets');
+
+module.exports=
+{
+  "disableLogins": false,
+  "secret": secrets.apiSecret,
+  "vceEmail": "vpatlas@vtecostudies.org",
+  "vcePassW": secrets.emailPassword,
+
+  "server" : {
+    "dev": "localhost:4200",
+    "prod": "vpatlas.org",
+    "dev-local": "localhost:4200",
+    "dev-remote": "dev.vpatlas.org"
+  },
+
+  "token" : {
+    "loginExpiry": "1 hour",
+    "registrationExpiry": "1 hour",
+    "resetExpiry": "1 hour"
+  },
+
+	"pg": {
+
+    "dev": {
+      "user": "postgres",
+      "host": "localhost",
+      "database": "loonweb",
+      "password": secrets.dbPassword,
+      "port": 5432
+    },
+
+    "prod": {
+      "user": "postgres",
+      "host": "localhost",
+      "database": "loonweb",
+      "password": secrets.dbPassword,
+      "port": 5432
+    },
+
+    "dev_local": {
+      "user": "postgres",
+      "host": "localhost",
+      "database": "loonweb",
+      "password": secrets.dbPassword,
+      "port": 5432
+    },
+
+    "dev_remote": {
+      "user": "postgres",
+      "host": "localhost",
+      "database": "loonweb",
+      "password": secrets.dbPassword,
+      "port": 5432
+    }
+  }
+}

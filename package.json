@@ -1,0 +1,42 @@
+{
+    "name": "vpatlas-node-postgis-api",
+    "version": "3.0.0",
+    "description": "NodeJS + Postgres + PostGIS API for VPAtlas",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/VtEcostudies/VPAtlas-node-api.git"
+    },
+    "scripts": {
+        "start": "pm2 start --env prod",
+        "start-prod": "pm2 start --env prod",
+        "start-production": "pm2 start --env prod",
+        "start-dev": "pm2 start --env dev_local",
+        "start-dev-local": "pm2 start --env dev_local",
+        "start-dev-remote": "pm2 start --env dev_remote",
+        "stop-all": "pm2 stop all"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "body-parser": "^1.19.0",
+        "compression": "^1.7.4",
+        "cors": "^2.8.5",
+        "express": "^4.17.1",
+        "express-jwt": "^6.0.0",
+        "fast-csv": "^4.3.6",
+        "json-2-csv": "^3.17.0",
+        "jsonwebtoken": "^8.5.1",
+        "moment": "^2.29.1",
+        "multer": "^1.4.2",
+        "node-fetch": "^2.6.7",
+        "nodemailer": "^6.5.0",
+        "pg": "^8.5.1",
+        "pg-promise": "^10.10.1",
+        "pm2": "^5.2.0",
+        "request": "^2.88.2",
+        "rootpath": "^0.1.2"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.7"
+    }
+}
