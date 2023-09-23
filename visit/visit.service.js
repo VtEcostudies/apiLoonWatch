@@ -27,7 +27,8 @@ const tables = [
   "vt_loon_locations",
   "vt_water_body",
   "vt_county",
-  "vt_town"
+  "vt_town",
+  "user"
 ];
 for (i=0; i<tables.length; i++) {
   pgUtil.getColumns(tables[i], staticColumns) //run it once on init: to create the array here. also diplays on console.

@@ -1,2 +1,2 @@
-cd /home/ubuntu/VPAtlas-node-api
-node /home/ubuntu/VPAtlas-node-api/server.js dev-remote > /home/ubuntu/VPAtlas-node-api/api.out & disown
+cd /home/ubuntu/apiLoonWatch
+node /home/ubuntu/apiLoonWatch/server.js dev-remote > /home/ubuntu/apiLoonWatch/api.out & disown

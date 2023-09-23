@@ -1,15 +1,8 @@
 /*
   https://node-postgres.com/
 */
-//const os = require("os");
-//const os_env = os.hostname()=='vpatlas.org'?'prod':(os.hostname()=='dev.vpatlas.org'?'dev-remote':'dev-local');
-//const process = require('process');
-//const prc_env = process.env;
-//const api_env = prc_env.NODE_ENV?prc_env.NODE_ENV:'dev-local';
 const env = require('apiUtility/apiEnv').env;
-const config = require('../config.js');
-
-console.log('db_postgres.js | env:', env);
+const config = require('config.js');
 
 if (!config.pg[env.api_env]) {
   console.log('db_postgres startup ERROR |', env.api_env, 'is NOT a valid config key.');

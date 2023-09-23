@@ -28,7 +28,7 @@ Install LoonWatch-node-api:
 
 Follow the install scripts:
 - 01_install_npm_node.sh
-- 02_install_vpatlas_npm.sh
+- 02_install_application_npm.sh
 - 03_create_secrets_js.sh
 - 04_install_https_certs.sh
 - 05_install_pm2.sh

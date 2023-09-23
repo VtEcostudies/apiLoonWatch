@@ -3,6 +3,9 @@
 module.exports=
 {
   "disableLogins": false,
+  "appName": 'LoonWatch',
+  "userTbl": 'user',
+  "roleTbl": 'role',
   "secret": secrets.apiSecret,
   "vceEmail": "vpatlas@vtecostudies.org",
   "vcePassW": secrets.emailPassword,
@@ -52,6 +55,15 @@ module.exports=
       "database": "loonweb",
       "password": secrets.dbPassword,
       "port": 5432
+    }
+  },
+
+  "survey123" : {
+    "visit" : {
+      "serviceId" : ""
+    },
+    "survey" : {
+      "serviceId" : ""
     }
   }
 }

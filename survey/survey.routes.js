@@ -1,5 +1,4 @@
-const express = require('express');
-const router = express.Router();
+const router = require('express').Router();
 const routes = require('apiUtility/routes');
 const convert = require('json-2-csv');
 const service = require('./survey.service');

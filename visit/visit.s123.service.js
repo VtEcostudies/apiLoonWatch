@@ -4,7 +4,7 @@ const pgUtil = require('apiDb/db_pg_util');
 const fetch = require('node-fetch');
 const vpS123Util = require('apiUtility/s123.service');
 const moment = require('moment');
-const config = require('../config_s123.json');
+const config = require('../config.js');
 var staticColumns = []; //all tables' columns in a single 1D array
 var tableColumns = []; //each table's columns by table name
 

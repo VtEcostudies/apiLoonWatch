@@ -32,7 +32,7 @@ module.exports = {
 const tables = [
   "vt_town",
   "vt_county",
-  "loonweb_user"
+  "user"
 ];
 for (i=0; i<tables.length; i++) {
   pgUtil.getColumns(tables[i], staticColumns) //run it once on init: to create the array here. also displays on console.

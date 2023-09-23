@@ -1,8 +1,5 @@
 const nodemailer = require('nodemailer');
 const config = require('config.js');
-//const os = require("os");
-//const host = os.hostname();
-//const env = os.hostname()=='vpatlas.org'?'prod':('dev.vpatlas.org'?'dev-remote':'dev-local');
 const env = require('apiUtility/apiEnv');
 
 module.exports = {

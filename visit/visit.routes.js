@@ -1,5 +1,4 @@
-﻿const express = require('express');
-const router = express.Router();
+﻿const router = require('express').Router();
 const routes = require('apiUtility/routes');
 const convert = require('json-2-csv');
 const service = require('./visit.service');
@@ -23,8 +22,6 @@ router.get('/s123/attachments', getS123attachments);
 router.get('/s123/services', getS123Services);
 router.get('/s123/uploads', getS123Uploads);
 router.get('/:id', getById);
-router.get('/pool/:poolId', getByPoolId);
-//router.get('/upload/history', getUploadHistory);
 router.post('/s123', postS123);
 router.post('/s123/attachments', postS123Attachments);
 router.post('/s123/all', postS123All);
@@ -89,8 +86,10 @@ function postS123Attachments(req, res, next) {
 
 function getCount(req, res, next) {
     service.getCount(req.query)
-        .then(items => res.json(items.rows))
-        .catch(err => next(err));
+    .then(items => {
+        items ? res.json({'rowCount': items.rows.length, 'rows': items.rows}) : res.sendStatus(404);
+    })
+    .catch(err => next(err));
 }
 
 function getAll(req, res, next) {
@@ -105,14 +104,6 @@ function getById(req, res, next) {
     service.getById(req.params.id)
         .then(item => {
           item ? res.json({'rowCount': item.rows.length, 'rows': item.rows}) : res.sendStatus(404);
-        })
-        .catch(err => next(err));
-}
-
-function getByPoolId(req, res, next) {
-    service.getByPoolId(req.params.poolId)
-        .then(item => {
-            item ? res.json({'rowCount': item.rows.length, 'rows': item.rows}) : res.sendStatus(404)
         })
         .catch(err => next(err));
 }

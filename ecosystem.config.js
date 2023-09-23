@@ -5,7 +5,7 @@
 module.exports = {
   apps : [{
     script : "./server.js",
-    name: "vpatlas-node-postgis-api",
+    name: "loonwatch-node-postgis-api",
     exec_mode: "cluster", // "cluster" or "fork"
     instances: 3, //-1,  // number of CPUs -1
     watch: true,  // auto restart app on change
@@ -21,15 +21,15 @@ module.exports = {
 */
     default: {
        NODE_ENV: "dev-local",
-       watch: ["./server.js","_helpers","users","vcgiMapData","vtInfo","vpMapped","vpPools","vpReview","vpSurvey","vpUtil","vpVisit"],
+       watch: ["./server.js","apiUser","vcgiMapData","vtInfo"],
     },
     env_dev: {
        NODE_ENV: "dev-local",
-       watch: ["./server.js","_helpers","users","vcgiMapData","vtInfo","vpMapped","vpPools","vpReview","vpSurvey","vpUtil","vpVisit"],
+       watch: ["./server.js","apiUser","vcgiMapData","vtInfo"],
     },
     env_dev_local: {
        NODE_ENV: "dev-local",
-       watch: ["./server.js","_helpers","users","vcgiMapData","vtInfo","vpMapped","vpPools","vpReview","vpSurvey","vpUtil","vpVisit"],
+       watch: ["./server.js","apiUser","vcgiMapData","vtInfo"],
     },
     env_dev_remote: {
        NODE_ENV: "dev-remote",
@@ -37,11 +37,11 @@ module.exports = {
     },
     env_prod: {
        NODE_ENV: "prod",
-       watch: ["/etc/letsencrypt/live","./server.js","_helpers","users","vcgiMapData","vtInfo","vpMapped","vpPools","vpReview","vpSurvey","vpUtil","vpVisit"],
+       watch: ["/etc/letsencrypt/live","./server.js","apiUser","vcgiMapData","vtInfo"],
     },
     env_production: {
        NODE_ENV: "prod",
-       watch: ["/etc/letsencrypt/live","./server.js","_helpers","users","vcgiMapData","vtInfo","vpMapped","vpPools","vpReview","vpSurvey","vpUtil","vpVisit"],
+       watch: ["/etc/letsencrypt/live","./server.js","apiUser","vcgiMapData","vtInfo"],
     }
   }]
 }

@@ -5,8 +5,10 @@ const db = require('apiDb/db_postgres');
 const query = db.query;
 const pgUtil = require('apiDb/db_pg_util');
 const sendmail = require('apiUser/sendmail');
-const tblName = `loonweb_user`;
-var staticColumns = []; //file scope list of ${tblName} table columns retrieved on app startup (see 'getColumns()' below)
+const userTbl = config.userTbl;
+const roleTbl = config.roleTbl;
+const appName = config.appName;
+var staticColumns = []; //file scope list of ${userTbl} table columns retrieved on app startup (see 'getColumns()' below)
 
 module.exports = {
     authenticate,
@@ -28,8 +30,10 @@ module.exports = {
 };
 
 const tables = [
-  "loonweb_user",
-  "loonweb_user_alias"
+  "user",
+  "role",
+  "user_role",
+  "user_alias"
 ];
 for (i=0; i<tables.length; i++) {
   pgUtil.getColumns(tables[i], staticColumns) //run it once on init: to create the array here. also displays on console.
@@ -57,30 +61,29 @@ auth set token=null and status='confirmed'.
 Originally, we filtered user selection to 'where token is null'. However, this
 did not allow us to return users whose status is not confirmed, which prevents
 us from returning an instructive error.
-
 */
 async function authenticate(body) {
-    if (!body.username || !body.password) {throw 'Username and password are required.';}
-    if (config.disableLogins) {throw 'VPAtlas logins are disabled.';}
+    if (!body.userName || !body.passWord) {throw 'Username and password are required.';}
+    if (config.disableLogins) {throw `${appName} logins are disabled.`;}
     return new Promise(async (resolve, reject) => {
         var token = null; //authentication token. return if successful login.
-        var select = `select * from ${tblName} where username=$1;`;
-        var args = [body.username];
+        var select = `select * from ${userTbl} where "userName"=$1;`;
+        var args = [body.userName];
         if (body.token) {
-          select = `select * from ${tblName} where username=$1 and token=$2;`;
-          args = [body.username, body.token];
+          select = `select * from ${userTbl} where "userName"=$1 and token=$2;`;
+          args = [body.userName, body.token];
         }
         console.log(select, args);
         const sres = await query(select, args);
         const user = sres.rows[0];
-        console.log(`${tblName}.service.authenticate | user: `, user);
-        if (user && bcrypt.compareSync(body.password, user.hash)) {
+        console.log(`${userTbl}.service.authenticate | user: `, user);
+        if (user && bcrypt.compareSync(body.passWord, user.hash)) {
             if (user.status=='confirmed' || body.token) { //confirmed, registration token and new_email token
               delete user.hash; //never return hash via API
-              token = jwt.sign({ sub: user.id, role: user.userrole }, config.secret, { expiresIn: config.token.loginExpiry });
+              token = jwt.sign({ sub: user.id, role: user.userRole }, config.secret, { expiresIn: config.token.loginExpiry });
               if (body.token) {
                 console.log(update, args);
-                var update = `update ${tblName} set token=null,status='confirmed' where username=$1 and token=$2 returning *;`;
+                var update = `update ${userTbl} set token=null,status='confirmed' where "userName"=$1 and token=$2 returning *;`;
                 query(update, args)
                   .then(res => {resolve ({"user":user, "token":token })})
                   .catch(err => {reject (err)});
@@ -100,7 +103,7 @@ async function authenticate(body) {
                   message += 'Please complete the change of email process using your new email token.';
                   break;
                 case 'invalid':
-                  message = 'This user is invalid. Please contact a VPAtlas administrator.';
+                  message = `This user is invalid. Please contact a ${appName} administrator.`;
                   break;
             }
               reject (message);
@@ -133,7 +136,7 @@ async function getAll(params={}) {
     }
     const where = pgUtil.whereClause(params, staticColumns);
     const text = `
-    SELECT * FROM ${tblName}
+    SELECT * FROM ${userTbl}
     ${where.text} ${orderClause};`;
     console.log(`user.service.js getAll`, text, where.values);
     try {
@@ -154,8 +157,8 @@ async function getPage(page, params={}) {
         var dir = params.orderBy.split("|")[1]; dir = dir ? dir : '';
         orderClause = `order by "${col}" ${dir}`;
     }
-    var where = pgUtil.whereClause(params, staticColumns); //whereClause filters output against ${tblName}.columns
-    const text = `select (select count(*) from ${tblName} ${where.text}),* from ${tblName} ${where.text} ${orderClause} offset ${offset} limit ${pageSize};`;
+    var where = pgUtil.whereClause(params, staticColumns); //whereClause filters output against ${userTbl}.columns
+    const text = `select (select count(*) from ${userTbl} ${where.text}),* from ${userTbl} ${where.text} ${orderClause} offset ${offset} limit ${pageSize};`;
     console.log(`user.service.js getPage`, text, where.values);
     try {
         var res = await query(text, where.values);
@@ -175,7 +178,7 @@ async function getPage(page, params={}) {
  */
 async function getById(id) {
     try {
-        var res = await query(`select * from ${tblName} where "id"=$1;`, [id]);
+        var res = await query(`select * from ${userTbl} where "id"=$1;`, [id]);
         if (res.rowCount == 1) {
             delete res.rows[0].hash;
             return res.rows[0];
@@ -189,9 +192,9 @@ async function getById(id) {
     }
 }
 
-async function getByUserName(username) {
+async function getByUserName(userName) {
     try {
-        var res = await query(`select * from ${tblName} where "username"=$1;`, [username]);
+        var res = await query(`select * from ${userTbl} where "userName"=$1;`, [userName]);
         if (res.rowCount == 1) {
             delete res.rows[0].hash;
             return res.rows[0];
@@ -206,7 +209,7 @@ async function getByUserName(username) {
 }
 
 async function getRoles() {
-  return await query(`select * from vprole`);
+  return await query(`select * from ${roleTbl}`);
 }
 
 /*
@@ -216,15 +219,15 @@ function register(body) {
     return new Promise((resolve, reject) => {
         body.token = jwt.sign({ registration:true, email:body.email }, config.secret, { expiresIn: config.token.registrationExpiry });
         body.status = 'registration';
-        body.userrole = 'user'; //default role is 'user' role.
+        body.userRole = 'user'; //default role is 'user' role.
         // hash password, add to body object, delete password from body object
-        if (body.password) {
-            body.hash = bcrypt.hashSync(body.password, 10);
-            delete body.password;
+        if (body.passWord) {
+            body.hash = bcrypt.hashSync(body.passWord, 10);
+            delete body.passWord;
         }
 
         var queryColumns = pgUtil.parseColumns(body, 1, [], staticColumns);
-        text = `insert into ${tblName} (${queryColumns.named}) values (${queryColumns.numbered}) returning id;`;
+        text = `insert into ${userTbl} (${queryColumns.named}) values (${queryColumns.numbered}) returning id;`;
         console.log(text, queryColumns.values);
         query(text, queryColumns.values)
           .then(res => {
@@ -235,10 +238,10 @@ function register(body) {
           })
           .catch(err => {
               console.log('user.service.js::register | ERROR ', err.message);
-              if (err.code == 23505 && err.constraint == 'vpuser_pkey') {
+              if (err.code == 23505 && err.constraint == `user_pkey`) {
                   err.name = 'Uniqueness Constraint Violation';
-                  err.hint = 'Please choose a different username.';
-                  err.message = `username '${body.username}' is already taken.`;
+                  err.hint = 'Please choose a different userName.';
+                  err.message = `userName '${body.userName}' is already taken.`;
               }
               if (err.code == 23505 && err.constraint == 'unique_email') {
                   err.name = 'Uniqueness Constraint Violation';
@@ -261,34 +264,34 @@ function register(body) {
   Password resets are done via the reset flow.
 
   User values that can only be done by administrative function:
-    - username
+    - userName
     - alias
     - role
     - status
 
-  NOTE: checking userrole=='admin' should be sufficiently secure. We embed
+  NOTE: checking userRole=='admin' should be sufficiently secure. We embed
   user object from db query in the auth jwt, which is not easily decoded. API access is only
-  possible with auth jwt, and user.userrole cannot be set another way.
+  possible with auth jwt, and user.userRole cannot be set another way.
 
-  If this is not secure enough, we could query the db for login userrole here
+  If this is not secure enough, we could query the db for login userRole here
   to double-check.
 */
 async function update(id, body, user) {
 
-    delete body.password; //don't allow password update here. only use reset flow.
+    delete body.passWord; //don't allow password update here. only use reset flow.
     if (user.role != 'admin') { //only allow admins to set these values.
-      delete body.username;
-      delete body.userrole;
+      delete body.userName;
+      delete body.userRole;
       delete body.alias;
       delete body.status;
     }
 
     /*
-      We receive Alias as an array, and store in ${tblName} but also in a separate
-      table, vpuser_alias. A database TRIGGER handles those insert/updates in postgres.
+      We receive Alias as an array, and store in ${userTbl} but also in a separate
+      table, ${userTbl}_alias. A database TRIGGER handles those insert/updates in postgres.
     */
     const queryColumns = pgUtil.parseColumns(body, 2, [id], staticColumns);
-    const text = `update ${tblName} set (${queryColumns.named}) = (${queryColumns.numbered}) where "id"=$1;`;
+    const text = `update ${userTbl} set (${queryColumns.named}) = (${queryColumns.numbered}) where "id"=$1;`;
     console.log(text, queryColumns.values);
     return await query(text, queryColumns.values);
 }
@@ -316,7 +319,7 @@ function test(email) {
 function reset(email) {
     return new Promise((resolve, reject) => {
       const token = jwt.sign({ reset:true, email:email }, config.secret, { expiresIn: config.token.resetExpiry });
-      text = `update ${tblName} set token=$2,status='reset' where "email"=$1 returning id,email,token;`;
+      text = `update ${userTbl} set token=$2,status='reset' where "email"=$1 returning id,email,token;`;
       console.log(text, [email, token]);
       query(text, [email, token])
         .then(res => {
@@ -349,7 +352,7 @@ function reset(email) {
 function new_email(id, email) {
     return new Promise((resolve, reject) => {
       const token = jwt.sign({ new_email:true, email:email }, config.secret, { expiresIn: config.token.resetExpiry });
-      text = `update ${tblName} set email=$2,token=$3,status='new_email' where id=$1 returning id,email,token;`;
+      text = `update ${userTbl} set email=$2,token=$3,status='new_email' where id=$1 returning id,email,token;`;
       console.log(text, [id, email, token]);
       query(text, [id, email, token])
         .then(res => {
@@ -390,7 +393,7 @@ function verify(token) {
       payload.now = Date.now();
       console.dir(payload);
       //multi-use token: verify and re-verify until token expires
-      var text = `select * from ${tblName} where email=$1 and token=$2;`;
+      var text = `select * from ${userTbl} where email=$1 and token=$2;`;
       console.log(text);
       query(text, [payload.email, token])
         .then(res => {
@@ -428,7 +431,7 @@ function confirm(token, password) {
       payload.now = Date.now();
       console.dir(payload);
       //confirm token validity and update password in one stroke...
-      var text = `update ${tblName} set hash=$3,token=null,status='confirmed' where "email"=$1 and "token"=$2 returning *;`;
+      var text = `update ${userTbl} set hash=$3,token=null,status='confirmed' where "email"=$1 and "token"=$2 returning *;`;
       console.log(text);
       query(text, [payload.email, token, hash])
         .then(res => {
@@ -449,5 +452,5 @@ function confirm(token, password) {
 }
 
 async function _delete(id) {
-    return await query(`delete from ${tblName} where "id"=$1;`, [id]);
+    return await query(`delete from ${userTbl} where "id"=$1;`, [id]);
 }
