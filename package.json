@@ -1,11 +1,11 @@
 {
-    "name": "vpatlas-node-postgis-api",
-    "version": "3.0.0",
-    "description": "NodeJS + Postgres + PostGIS API for VPAtlas",
+    "name": "loonwatch-node-postgis-api",
+    "version": "0.0.1",
+    "description": "NodeJS + Postgres + PostGIS API",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/VtEcostudies/VPAtlas-node-api.git"
+        "url": "https://github.com/VtEcostudies/apiLoonWatch.git"
     },
     "scripts": {
         "start": "pm2 start --env prod",
