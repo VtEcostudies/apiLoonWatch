@@ -23,6 +23,13 @@ module.exports=
     "resetExpiry": "1 hour"
   },
 
+  "api": {
+    "dev": {tls:0, port:4000, host:"localhost"},
+    "prod":{tls:1, port:4422, host:"vpatlas.org"},
+    "dev-local":{tls:0, port:4000, host:"localhost"},
+    "dev-remote":{tls:0, port:4422, host:"dev.vpatlas.org"}
+  },
+
 	"pg": {
 
     "dev": {

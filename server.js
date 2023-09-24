@@ -8,16 +8,13 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('apiUtility/jwt');
 const errorHandler = require('apiUtility/errorHandler');
+const config = require('config.js');
 const env = require('apiUtility/apiEnv').env;
 const process = require('process');
-var apiServerConfig = {
-  tls: 0,
-  port: 4000,
-  host: 'localhost',
-}
 var debug = false;
 var noJwt = false; //turn off web token security
-
+var apiServerConfig = config.api[env.api_env];
+/*
 switch(env.api_env) {
   default:
   case 'dev-local':
@@ -31,6 +28,7 @@ switch(env.api_env) {
     apiServerConfig = {tls: 1, port: 4322, host: 'vpatlas.org'};
     break;
 }
+*/
 
 /* Command-Line Arguments Processing
  These are processed without prefixed "-"
