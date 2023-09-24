@@ -1,7 +1,7 @@
 const os = require("os");
 const process = require('process');
 const config = require('../config');
-const os_env = os.hostname()==config.server.prod ? 'prod' : (os.hostname()==config.server.dev_remote ? 'dev_remote' : 'dev_local');
+const os_env = os.hostname()==config.server['prod'] ? 'prod' : (os.hostname()==config.server['dev-remote'] ? 'dev-remote' : 'dev-local');
 const prc_env = process.env;
 const api_env = prc_env.NODE_ENV ? prc_env.NODE_ENV : os_env;
 const db_env = config.pg[api_env];

@@ -41,7 +41,7 @@ module.exports=
       "port": 5432
     },
 
-    "dev_local": {
+    "dev-local": {
       "user": "api",
       "host": "localhost",
       "database": "loonweb",
@@ -49,7 +49,7 @@ module.exports=
       "port": 5432
     },
 
-    "dev_remote": {
+    "dev-remote": {
       "user": "api",
       "host": "localhost",
       "database": "loonweb",
