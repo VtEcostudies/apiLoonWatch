@@ -26,7 +26,7 @@ module.exports=
 	"pg": {
 
     "dev": {
-      "user": "postgres",
+      "user": "api",
       "host": "localhost",
       "database": "loonweb",
       "password": secrets.dbPassword,
@@ -34,7 +34,7 @@ module.exports=
     },
 
     "prod": {
-      "user": "postgres",
+      "user": "api",
       "host": "localhost",
       "database": "loonweb",
       "password": secrets.dbPassword,
@@ -42,7 +42,7 @@ module.exports=
     },
 
     "dev_local": {
-      "user": "postgres",
+      "user": "api",
       "host": "localhost",
       "database": "loonweb",
       "password": secrets.dbPassword,
@@ -50,7 +50,7 @@ module.exports=
     },
 
     "dev_remote": {
-      "user": "postgres",
+      "user": "api",
       "host": "localhost",
       "database": "loonweb",
       "password": secrets.dbPassword,

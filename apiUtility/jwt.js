@@ -1,4 +1,5 @@
-const expressJwt = require('express-jwt');
+//const expressjwt = require('express-jwt');
+const { expressjwt: expressjwt } = require('express-jwt');
 const config = require('config.js');
 const userService = require('../apiUser/user.service');
 
@@ -17,7 +18,7 @@ Example: Key: Authorization, Value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
 function jwt() {
     const secret = config.secret;
     const algorithms = ['HS256']; //NOTE: This has to match user.service jwt.sign algorithm.
-    return expressJwt({ secret, algorithms, isRevoked }).unless({
+    return expressjwt({ secret, algorithms, isRevoked }).unless({
         path: [
             /*
              public routes that don't require authentication
