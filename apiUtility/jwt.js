@@ -31,25 +31,15 @@ function jwt() {
             '/users/routes',
             '/users/test',
 
-            //'/utils/timer',
-            { url: /utils\/timer/, methods: ['GET'] },
+            { url: /^\/util\/*/, methods: ['GET'] },
 
-            { url: /^\/utils\/where/, methods: ['GET'] },
+            { url: /^\/info\/*/, methods: ['GET'] },
 
-            { url: /^\/vtinfo\/towns/, methods: ['GET'] },
-            { url: /^\/vtinfo\/counties/, methods: ['GET'] },
-            { url: /^\/vtinfo\/routes/, methods: ['GET'] },
-
-            { url: /^\/parcel\/townId\/.*/, methods: ['GET'] },
-            { url: /^\/parcel\/townName\/.*/, methods: ['GET'] },
+            { url: /^\/parcel\/*/, methods: ['GET'] },
 
             { url: /^\/loonwatch\/*/, methods: ['GET'] },
 
-            { url: /^\/survey\/columns/, methods: ['GET'] },
-            { url: /^\/survey/, methods: ['GET'] },
-            { url: /^\/survey\/.*/, methods: ['GET'] },
-            { url: /^\/survey\/page\/.*/, methods: ['GET'] },
-            { url: /^\/survey\/pool\/.*/, methods: ['GET'] },
+            { url: /^\/survey\/*/, methods: ['GET'] },
 
             //for testing. remove these in production.
             //{ url: /^\/survey\/.*/, methods: ['POST'] },
