@@ -7,7 +7,7 @@ module.exports = {
     script : "./server.js",
     name: "loonwatch-node-postgis-api",
     exec_mode: "cluster", // "cluster" or "fork"
-    instances: 3, //-1,  // number of CPUs -1
+    instances: 1, //-1,  // number of CPUs -1
     watch: true,  // auto restart app on change
     ignore_watch: ["node_modules"],
     watch_delay: 3000,
@@ -21,27 +21,27 @@ module.exports = {
 */
     default: {
        NODE_ENV: "dev-local",
-       watch: ["./server.js","apiUser","vcgiMapData","vtInfo"],
+       watch: ["./server.js","apiDb","apiUser","apiUtility","vtInfo","visit"],
     },
     env_dev: {
        NODE_ENV: "dev-local",
-       watch: ["./server.js","apiUser","vcgiMapData","vtInfo"],
+       watch: ["./server.js","apiDb","apiUser","apiUtility","vtInfo","visit"],
     },
     env_dev_local: {
        NODE_ENV: "dev-local",
-       watch: ["./server.js","apiUser","vcgiMapData","vtInfo"],
+       watch: ["./server.js","apiDb","apiUser","apiUtility","vtInfo","visit"],
     },
     env_dev_remote: {
        NODE_ENV: "dev-remote",
-       watch: ["./server.js", "/etc/letsencrypt/live"]
+       watch: ["./server.js", "/etc/letsencrypt/live","apiDb","apiUser","apiUtility","vtInfo","visit"],
     },
     env_prod: {
        NODE_ENV: "prod",
-       watch: ["/etc/letsencrypt/live","./server.js","apiUser","vcgiMapData","vtInfo"],
+       watch: ["./server.js", "/etc/letsencrypt/live","apiDb","apiUser","apiUtility","vtInfo","visit"],
     },
     env_production: {
        NODE_ENV: "prod",
-       watch: ["/etc/letsencrypt/live","./server.js","apiUser","vcgiMapData","vtInfo"],
+       watch: ["./server.js", "/etc/letsencrypt/live","apiDb","apiUser","apiUtility","vtInfo","visit"],
     }
   }]
 }
