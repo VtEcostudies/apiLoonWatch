@@ -94,13 +94,16 @@ function whereClause(params={}, staticColumns=[], clause='WHERE') {
             var col = key.split("|")[0];
             var opr = key.split("|")[1];
             var val = params[key];
+            var arr = Array.from(val); //value string to array - to look at chars within
             opr = opr ? opr : '='; //default operator is '='
             opr = opr==='!' ? '!=' : opr; //turn '!' operator into its intended operator: '!='
             opr = val.includes('%') ? 'LIKE' : opr; //if value contains %, use LIKE comparison operator
-            if (val.includes('<=')) {opr = '<='; val = val.replace('<=', '');}
-            if (val.includes('>=')) {opr = '>='; val = val.replace('>=', '');}
-            if (val.includes('<')) {opr = '<'; val = val.replace('<', '');}
-            if (val.includes('>')) {opr = '>'; val = val.replace('>', '');}
+            if ('<'==arr[0] && '='==arr[1] && '='==opr) {opr = '<='; val = arr.slice(2).join('');}
+            if ('>'==arr[0] && '='==arr[1] && '='==opr) {opr = '>='; val = arr.slice(2).join('');}
+            if ('!'==arr[0] && '='==arr[1] && '='==opr) {opr = '!='; val = arr.slice(2).join('');}
+            if ('<'==arr[0] && '='==opr) {opr = '<'; val = arr.slice(1).join('');}
+            if ('>'==arr[0] && '='==opr) {opr = '>'; val = arr.slice(1).join('');}
+            if ('!'==arr[0] && '='==opr) {opr = '!='; val = arr.slice(1).join('');}
             if (!Array.isArray(val) && val.toLowerCase()=='null') { //null value requires special operators
               opr = opr==='!=' ? ' IS NOT NULL' : ' IS NULL';
             }
