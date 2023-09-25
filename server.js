@@ -8,12 +8,12 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('apiUtility/jwt');
 const errorHandler = require('apiUtility/errorHandler');
-const config = require('config.js');
+const cfg = require('config.js');
 const env = require('apiUtility/apiEnv').env;
 const process = require('process');
 var debug = false;
 var noJwt = false; //turn off web token security
-var apiServerConfig = config.api[env.api_env];
+var apiServerConfig = cfg.api[env.api_env];
 /*
 switch(env.api_env) {
   default:
@@ -105,6 +105,7 @@ try {
   //test the db connection first. each of the below routes include services that make a db connection, creating lots of errors.
   const db = require('apiDb/db_postgres');
   // api routes
+  app.use('/', require('./default.routes')); //web page with top-level routes
   app.use('/user', require('./apiUser/user.routes')); //postgres user db
   app.use('/info', require('./vtInfo/vtInfo.routes')); //postgres vermont data - counties, towns, etc.
   app.use('/util', require('./apiUtility/utils.routes')); //utils to test API features like where clause handling

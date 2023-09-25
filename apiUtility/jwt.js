@@ -24,6 +24,7 @@ function jwt() {
              public routes that don't require authentication
              https://stackoverflow.com/questions/30559158/handling-parameterised-routes-in-express-jwt-using-unless
              */
+            '/',
             '/users/authenticate',
             '/users/register',
             '/users/reset',
