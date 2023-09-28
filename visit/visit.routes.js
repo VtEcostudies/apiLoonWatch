@@ -16,12 +16,14 @@ router.get('/shapefile', getShapeFile);
 router.get('/columns', getColumns);
 router.get('/routes', getRoutes);
 router.get('/count', getCount);
+router.get('/surveyed', getSurveyed);
+router.get('/occupied', getOccupied);
 router.get('/', getAll);
 router.get('/s123', getS123);
 router.get('/s123/attachments', getS123attachments);
 router.get('/s123/services', getS123Services);
 router.get('/s123/uploads', getS123Uploads);
-router.get('/:id', getById);
+router.get('/location/:id', getByLocation);
 router.post('/s123', postS123);
 router.post('/s123/attachments', postS123Attachments);
 router.post('/s123/all', postS123All);
@@ -92,6 +94,22 @@ function getCount(req, res, next) {
     .catch(err => next(err));
 }
 
+function getSurveyed(req, res, next) {
+    service.getSurveyed(req.query)
+    .then(items => {
+        items ? res.json({'rowCount': items.rows.length, 'rows': items.rows}) : res.sendStatus(404);
+    })
+    .catch(err => next(err));
+}
+
+function getOccupied(req, res, next) {
+    service.getOccupied(req.query)
+    .then(items => {
+        items ? res.json({'rowCount': items.rows.length, 'rows': items.rows}) : res.sendStatus(404);
+    })
+    .catch(err => next(err));
+}
+
 function getAll(req, res, next) {
     service.getAll(req.query)
         .then(items => {
@@ -100,8 +118,8 @@ function getAll(req, res, next) {
       .catch(err => next(err));
 }
 
-function getById(req, res, next) {
-    service.getById(req.params.id)
+function getByLocation(req, res, next) {
+    service.getByLocation(req.params.id)
         .then(item => {
           item ? res.json({'rowCount': item.rows.length, 'rows': item.rows}) : res.sendStatus(404);
         })

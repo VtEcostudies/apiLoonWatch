@@ -4,14 +4,16 @@ const pgUtil = require('apiDb/db_pg_util');
 const common = require('apiDb/db_common');
 const shapeFile = require('apiDb/db_shapefile').shapeFile;
 const tblName = `loonwatch_ingest`; //put double-quotes around columns for pg if needed
-const tblKey = `lwIngestDate`; //put double-quotes around columns for pg if needed
+const tblKey = `lwingestlocation`; //put double-quotes around columns for pg if needed
 var staticColumns = [];
 
 module.exports = {
     getColumns,
     getCount,
+    getSurveyed,
+    getOccupied,
     getAll,
-    getById,
+    getByLocation,
     getCsv,
     getGeoJson,
     getShapeFile,
@@ -68,7 +70,14 @@ async function getCount(params={}) {
   return await query(text, where.values);
 }
 
+async function getByLocation(id) {
+  console.log(`visit.service::getByLocation(${id})`);
+  let param = {}; param[tblKey]=id;
+  return getAll(param);
+}
+
 async function getAll(params={}) {
+  console.log(`visit.service::getAll(${params})`);
   var orderClause = `order by lwIngestDate`;
   if (params.orderBy) {
       var col = params.orderBy.split("|")[0];
@@ -78,12 +87,11 @@ async function getAll(params={}) {
   var where = pgUtil.whereClause(params, staticColumns);
   const text = `
   SELECT
-  "townId",
   "townName",
   "countyName",
   li.*,
   ll.*,
-    wb.*
+  wb.*
   FROM ${tblName} li
   JOIN vt_loon_locations ll ON locationName=lwIngestLocation
   JOIN vt_water_body wb ON wbTextId=waterBodyId
@@ -94,25 +102,47 @@ async function getAll(params={}) {
   return await query(text, where.values);
 }
 
-/*
-*/
-async function getById(id) {
-    var text = `
-    SELECT
-    "townId",
-    "townName",
-    "countyName",
-    li.*,
-    ll.*,
-    wb.*
-    FROM ${tblName} li
-    JOIN vt_loon_locations ll ON locationName=lwIngestLocation
-    JOIN vt_water_body wb ON wbTextId=waterBodyId
-    LEFT JOIN vt_town ON locationTownId="townId"
-    LEFT JOIN vt_county ON "govCountyId"="townCountyId"
-    WHERE ${tblKey}=$1;`;
+//Surveyed Lakes by Lake/Town/County/Region with most recent survey year
+async function getSurveyed(params={}) {
+  var where = pgUtil.whereClause(params, staticColumns);
+  var text = `
+  SELECT wbRegion, "countyName", "townName", wbTextId, MAX(DATE_PART('YEAR', lwIngestDate)) AS Surveyed
+  FROM loonwatch_ingest li
+  JOIN vt_loon_locations ll on ll.locationName=li.lwingestlocation
+  JOIN vt_water_body wb ON wb.wbTextId=ll.waterBodyId
+  JOIN vt_town on ll.locationTownId="townId"
+  JOIN vt_county ON "govCountyId"="townCountyId"
+  --WHERE wbTextId LIKE 'MILLER%'
+  --WHERE "townName"='Derby'
+  --WHERE "countyName"='Windsor'
+  --WHERE wbRegion LIKE 'Champ%'
+  ${where.text}
+  GROUP BY wbRegion, "countyName", "townName", wbTextId
+  ORDER BY wbRegion, "countyName", "townName", wbTextId`;
+  console.log(text, where.values);
+  return await query(text, where.values);
+}
 
-    return await query(text, [id])
+//Occupied Lakes by Lake/Town/County with most recent occupied year
+async function getOccupied(params={}) {
+  var where = pgUtil.whereClause(params, staticColumns, 'AND');
+  var text = `
+  SELECT wbRegion, "countyName", "townName", wbTextId, MAX(DATE_PART('YEAR', lwIngestDate)) AS Occupied
+  FROM loonwatch_ingest li
+  JOIN vt_loon_locations ll on ll.locationName=li.lwingestlocation
+  JOIN vt_water_body wb ON wb.wbTextId=ll.waterBodyId
+  JOIN vt_town on ll.locationTownId="townId"
+  JOIN vt_county ON "govCountyId"="townCountyId"
+  WHERE (COALESCE(lwIngestAdult,0)+COALESCE(lwIngestSubAdult,0)+COALESCE(lwIngestChick,0))>0
+  --AND wbTextId LIKE 'MILLER%'
+  --AND "townName"='Derby'
+  --AND "countyName"='Windsor'
+  --AND wbRegion LIKE 'Champ%'
+  ${where.text}
+  GROUP BY wbRegion, "countyName", "townName", wbTextId
+  ORDER BY wbRegion, "countyName", "townName", wbTextId`;
+  console.log(text, where.values);
+  return await query(text, where.values);
 }
 
 async function getCsv(params={}) {
