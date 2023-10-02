@@ -85,6 +85,7 @@ async function getColumns(tableName, columns=[], retcols=[]) {
 function whereClause(params={}, staticColumns=[], clause='WHERE') {
     var where = '';
     var values = [];
+    var vrbtim = '';
     var idx = 1;
     //console.log('dg_pg_util::whereClause | params', params);
     if (Object.keys(params).length) {
@@ -142,9 +143,14 @@ function whereClause(params={}, staticColumns=[], clause='WHERE') {
                 }
             }
         }
-        console.log('where clause:', where, 'values:', values);
+        vrbtim = where;
+        for (var i=0; i<values.length; i++) {
+          vrbtim = vrbtim.replace(`$${i+1}`, values[i]);
+        }
+      
+        console.log('where clause:', where, 'values:', values, 'verbatim:', vrbtim);
     }
-    return { 'text': where, 'values': values };
+    return { 'text': where, 'values': values, 'verbatim': vrbtim};
 }
 
 /*

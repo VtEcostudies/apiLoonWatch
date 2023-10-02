@@ -41,15 +41,15 @@ function getColumns() {
     return new Promise((resolve, reject) => {
       console.log(`visit.service.getColumns | staticColumns:`, staticColumns);
       resolve(new Promise((resolve, reject) => {
-      resolve(staticColumns);
-    }));
+        resolve(staticColumns);
+      }));
     });
 }
 
 async function getCount(params={}) {
   const where = pgUtil.whereClause(params, staticColumns);
-  var whereColumn = '';
-  if (where.text) {whereColumn=`, '${where.text}' AS "Filter"`;}
+  var whereFilter = '';
+  if (where.verbatim) {whereFilter = `, '${where.verbatim}' AS "Filter"`;}
   const text = `SELECT
       DATE_PART('year', lwIngestDate) AS YEAR, 
       COALESCE(SUM(lwIngestAdult), 0) AS "Adults",
@@ -57,7 +57,7 @@ async function getCount(params={}) {
       COALESCE(SUM(lwIngestChick), 0) AS "Chicks",
       COUNT(lwIngestSurvey) AS "SurveyedBodies",
       SUM(locationArea) AS "AreaSurveyed"
-      ${whereColumn}
+      ${whereFilter}
       FROM loonwatch_ingest
       JOIN vt_loon_locations ll ON locationName=lwIngestLocation
       JOIN vt_water_body wb ON wbTextId=waterBodyId
