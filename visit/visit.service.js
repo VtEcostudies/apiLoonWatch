@@ -106,7 +106,7 @@ async function getAll(params={}) {
 async function getSurveyed(params={}) {
   var where = pgUtil.whereClause(params, staticColumns);
   var text = `
-  SELECT wbRegion, "countyName", "townName", wbTextId, MAX(DATE_PART('YEAR', lwIngestDate)) AS Surveyed
+  SELECT wbRegion, "countyName", "townName", wbTextId, wbFullName, MAX(DATE_PART('YEAR', lwIngestDate)) AS Surveyed
   FROM loonwatch_ingest li
   JOIN vt_loon_locations ll on ll.locationName=li.lwingestlocation
   JOIN vt_water_body wb ON wb.wbTextId=ll.waterBodyId
@@ -127,7 +127,7 @@ async function getSurveyed(params={}) {
 async function getOccupied(params={}) {
   var where = pgUtil.whereClause(params, staticColumns, 'AND');
   var text = `
-  SELECT wbRegion, "countyName", "townName", wbTextId, MAX(DATE_PART('YEAR', lwIngestDate)) AS Occupied
+  SELECT wbRegion, "countyName", "townName", wbTextId, wbFullName, MAX(DATE_PART('YEAR', lwIngestDate)) AS Occupied
   FROM loonwatch_ingest li
   JOIN vt_loon_locations ll on ll.locationName=li.lwingestlocation
   JOIN vt_water_body wb ON wb.wbTextId=ll.waterBodyId
