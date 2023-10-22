@@ -35,7 +35,8 @@ function getColumns() {
   
 async function getCounties(reqQry) {
     const where = pgUtil.whereClause(reqQry, staticColumns);
-    const text = `select * from ${tblCounty} ${where.text};`;
+    const order = `ORDER BY "countyName"`;
+    const text = `select * from ${tblCounty} ${where.text} ${order};`;
     return await query(text, where.values);
 }
 
@@ -46,7 +47,8 @@ async function getCounty(id) {
 
 async function getTowns(reqQry={}) {
     const where = pgUtil.whereClause(reqQry, staticColumns);
-    const text = `select * from ${tblTown} ${where.text};`;
+    const order = `ORDER BY "townName"`;
+    const text = `select * from ${tblTown} ${where.text} ${order};`;
     return await query(text, where.values);
 }
 
@@ -55,13 +57,14 @@ async function getTown(id) {
     return await query(text, [id]);
 }
 
-async function getTable(reqQry, table, idColumn=false, idValue=false) {
+async function getTable(reqQry, table, ordByCol=false, idColumn=false, idValue=false) {
     if (idColumn & idValue) {
         const text = `select * from ${table} where "${idColumn}"=$1;`;
         return await query(text, [idValue]);
     } else {
         const where = pgUtil.whereClause(reqQry, staticColumns);
-        const text = `select * from ${table} ${where.text};`;
+        const order = ordByCol ? `ORDER BY ${ordByCol}` : '';
+        const text = `select * from ${table} ${where.text} ${order}`;
         return await query(text, where.values);
     }
 }

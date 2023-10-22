@@ -54,7 +54,7 @@ function getTown(req, res, next) {
 
 function getLake(req, res, next) {
 	console.log('getLake', req.query);
-    vtInfoService.getTable(req.query, 'vt_loon_locations')
+    vtInfoService.getTable(req.query, 'vt_loon_locations', 'exportname')
         .then(data => {
             data ? res.json({'rowCount': data.rows.length, 'rows': data.rows}) : res.sendStatus(404);
         })
@@ -63,7 +63,7 @@ function getLake(req, res, next) {
 
 function getBody(req, res, next) {
 	console.log('getWaterBody', req.query);
-    vtInfoService.getTable(req.query, 'vt_water_body')
+    vtInfoService.getTable(req.query, 'vt_water_body', 'wbtextid')
         .then(data => {
             data ? res.json({'rowCount': data.rows.length, 'rows': data.rows}) : res.sendStatus(404);
         })

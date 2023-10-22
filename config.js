@@ -25,9 +25,9 @@ module.exports=
 
   "api": {
     "dev": {tls:0, port:4000, host:"localhost"},
-    "prod":{tls:1, port:4422, host:"vpatlas.org"},
+    "prod":{tls:1, port:4422, host:"api.loons.vtecostudies.org"},
     "dev-local":{tls:0, port:4000, host:"localhost"},
-    "dev-remote":{tls:0, port:4422, host:"dev.vpatlas.org"}
+    "dev-remote":{tls:1, port:4422, host:"api.loons.vtecostudies.org"}
   },
 
 	"pg": {
