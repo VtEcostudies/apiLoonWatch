@@ -18,6 +18,7 @@ router.get('/routes', getRoutes);
 router.get('/count', getCount);
 router.get('/surveyed', getSurveyed);
 router.get('/occupied', getOccupied);
+router.get('/stats', getStats); //Now:Surveyed and Occupied together. Later: add latest photo URL, nest status, etc.
 router.get('/', getAll);
 router.get('/s123', getS123);
 router.get('/s123/attachments', getS123attachments);
@@ -104,6 +105,14 @@ function getSurveyed(req, res, next) {
 
 function getOccupied(req, res, next) {
     service.getOccupied(req.query)
+    .then(items => {
+        items ? res.json({'rowCount': items.rows.length, 'rows': items.rows}) : res.sendStatus(404);
+    })
+    .catch(err => next(err));
+}
+
+function getStats(req, res, next) {
+    service.getStats(req.query)
     .then(items => {
         items ? res.json({'rowCount': items.rows.length, 'rows': items.rows}) : res.sendStatus(404);
     })

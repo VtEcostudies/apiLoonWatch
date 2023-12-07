@@ -12,6 +12,7 @@ module.exports = {
     getCount,
     getSurveyed,
     getOccupied,
+    getStats,
     getAll,
     getByLocation,
     getCsv,
@@ -141,6 +142,44 @@ async function getOccupied(params={}) {
   ${where.text}
   GROUP BY wbRegion, "countyName", "townName", wbTextId
   ORDER BY wbRegion, "countyName", "townName", wbTextId`;
+  console.log(text, where.values);
+  return await query(text, where.values);
+}
+
+async function getStats(params={}) {
+  var where = pgUtil.whereClause(params, staticColumns, 'AND');
+  var text = `
+  SELECT wbRegion AS "regionName", "countyName", "townName", wbTextId, wbOfficialName, locationName as "lakeName", wbArea,
+  (SELECT MAX(DATE_PART('YEAR', lwIngestDate)) AS "lastOccupied"
+    FROM loonwatch_ingest
+    WHERE lwIngestLocation=locationName
+    AND (COALESCE(lwIngestAdult,0)+COALESCE(lwIngestSubAdult,0)+COALESCE(lwIngestChick,0))>0
+    GROUP BY lwIngestLocation),
+  (ARRAY (SELECT DATE_PART('YEAR', lwIngestDate) AS Year
+    FROM loonwatch_ingest
+    WHERE lwIngestLocation=locationName
+    AND (COALESCE(lwIngestAdult,0)+COALESCE(lwIngestSubAdult,0)+COALESCE(lwIngestChick,0))>0
+    GROUP BY lwIngestLocation, lwIngestDate)) AS occupied,
+  (SELECT MAX(DATE_PART('YEAR', lwIngestDate)) AS "lastSurveyed"
+    FROM loonwatch_ingest
+    WHERE lwIngestLocation=locationName
+    GROUP BY lwIngestLocation),
+  (ARRAY (SELECT DATE_PART('YEAR', lwIngestDate) AS Year
+    FROM loonwatch_ingest
+    WHERE lwIngestLocation=locationName
+    GROUP BY lwIngestLocation, lwIngestDate)) AS surveyed
+    FROM vt_water_body wb
+    FULL JOIN vt_loon_locations ll on ll.waterBodyId=wb.wbTextId
+    FULL JOIN loonWatch_ingest li ON ll.locationName=li.lwingestlocation
+    FULL JOIN vt_town on wbTownName="townName"
+    JOIN vt_county ON "govCountyId"="townCountyId"
+  --WHERE locationName LIKE 'Memphremago%'
+  --WHERE "townName" = 'Derby'
+  --WHERE "countyName" = 'Orleans'
+  --WHERE wbRegion LIKE 'North%'
+  ${where.text}
+  GROUP BY wbRegion, "countyName", "townName", wbTextId, wbOfficialName, locationName, wbArea
+  ORDER BY wbRegion, "countyName", "townName", wbTextId, wbOfficialName, locationName, wbArea`;
   console.log(text, where.values);
   return await query(text, where.values);
 }
