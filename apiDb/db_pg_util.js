@@ -98,6 +98,7 @@ function whereClause(params={}, staticColumns=[], clause='WHERE') {
             var arr = Array.from(val); //value string to array - to look at chars within
             opr = opr ? opr : '='; //default operator is '='
             opr = opr==='!' ? '!=' : opr; //turn '!' operator into its intended operator: '!='
+            val = val.replace('*','%') //allow the * wildcard by converting to % 
             opr = val.includes('%') ? 'LIKE' : opr; //if value contains %, use LIKE comparison operator
             if ('<'==arr[0] && '='==arr[1] && '='==opr) {opr = '<='; val = arr.slice(2).join('');}
             if ('>'==arr[0] && '='==arr[1] && '='==opr) {opr = '>='; val = arr.slice(2).join('');}
