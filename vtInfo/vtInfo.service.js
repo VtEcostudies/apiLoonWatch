@@ -11,7 +11,8 @@ module.exports = {
     getCounty,
 	getTowns,
 	getTown,
-    getTable
+    getTable,
+    getBodyLake
 };
 
 const tables = [
@@ -58,13 +59,39 @@ async function getTown(id) {
 }
 
 async function getTable(reqQry, table, ordByCol=false, idColumn=false, idValue=false) {
-    if (idColumn & idValue) {
+    //console.log('getTable', table, ordByCol, idColumn, idValue);
+    if (idColumn && idValue) {
         const text = `select * from ${table} where "${idColumn}"=$1;`;
+        //console.log('getTable', table, text);
         return await query(text, [idValue]);
     } else {
+        if (reqQry.orderBy) {ordByCol = reqQry.orderBy;}//To-do: check that orderBy is valid for table
         const where = pgUtil.whereClause(reqQry, staticColumns);
         const order = ordByCol ? `ORDER BY ${ordByCol}` : '';
         const text = `select * from ${table} ${where.text} ${order}`;
         return await query(text, where.values);
     }
+}
+
+async function getBodyLake(reqQry) {
+    const where = pgUtil.whereClause(reqQry, staticColumns);
+    const order = reqQry.orderBy ? `ORDER BY ${reqQry.ordBy}` : '';
+    const text = `
+select
+locationname,
+locationtown,
+locationregion,
+exportname,
+wbtextid,
+wbofficialname,
+wbregion,
+wbarea,
+wbfullname,
+wbtype,
+wbcenterlatitude,
+wbcenterlongitude
+from vt_loon_locations ll
+full outer join vt_water_body wb on wbtextid=waterbodyid
+${where.text} ${order}`;
+    return await query(text, where.values);
 }

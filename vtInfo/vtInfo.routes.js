@@ -11,6 +11,8 @@ router.get('/towns', getTowns);
 router.get('/town/:id', getTown);
 router.get('/lake', getLake);
 router.get('/waterBody', getBody);
+router.get('/waterBody/:id', getBody);
+router.get('/bodyLake', getBodyLake);
 
 module.exports = router;
 
@@ -63,7 +65,15 @@ function getLake(req, res, next) {
 
 function getBody(req, res, next) {
 	console.log('getWaterBody', req.query);
-    vtInfoService.getTable(req.query, 'vt_water_body', 'wbtextid')
+    vtInfoService.getTable(req.query, 'vt_water_body', 'wbtextid', 'wbtextid', req.params.id)
+        .then(data => {
+            data ? res.json({'rowCount': data.rows.length, 'rows': data.rows}) : res.sendStatus(404);
+        })
+        .catch(err => next(err));
+}
+
+function getBodyLake(req, res, next) {
+    vtInfoService.getBodyLake(req.query)
         .then(data => {
             data ? res.json({'rowCount': data.rows.length, 'rows': data.rows}) : res.sendStatus(404);
         })
