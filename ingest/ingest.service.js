@@ -5,7 +5,8 @@ const common = require('apiDb/db_common');
 const shapeFile = require('apiDb/db_shapefile').shapeFile;
 const tblName = `loonwatch_ingest`; //put double-quotes around columns for pg if needed
 const tblKey = `lwingestlocation`; //put double-quotes around columns for pg if needed
-var staticColumns = [];
+var staticColumns = []; //all tables' columns in a single 1D array
+var tableColumns = []; //each table's columns by table name
 
 module.exports = {
     getColumns,
@@ -34,13 +35,16 @@ const tables = [
 ];
 for (i=0; i<tables.length; i++) {
   pgUtil.getColumns(tables[i], staticColumns) //run it once on init: to create the array here. also diplays on console.
-    .then(res => {return res;})
-    .catch(err => {console.log(`visit.service.getColumns | table:${tables[i]} | error: `, err.message);});
+  .then(res => {
+    tableColumns[res.tableName] = res.tableColumns;
+    return res;
+  })
+  .catch(err => {console.log(`ingest.service.getColumns | table:${tables[i]} | error: `, err.message);});
 }
 
 function getColumns() {
     return new Promise((resolve, reject) => {
-      console.log(`visit.service.getColumns | staticColumns:`, staticColumns);
+      console.log(`ingest.service.getColumns | staticColumns:`, staticColumns);
       resolve(new Promise((resolve, reject) => {
         resolve(staticColumns);
       }));
@@ -72,13 +76,13 @@ async function getCount(params={}) {
 }
 
 async function getByLocation(id) {
-  console.log(`visit.service::getByLocation(${id})`);
+  console.log(`ingest.service::getByLocation(${id})`);
   let param = {}; param[tblKey]=id;
   return getAll(param);
 }
 
 async function getAll(params={}) {
-  console.log(`visit.service::getAll(${params})`);
+  console.log(`ingest.service::getAll(${params})`);
   var orderClause = `order by lwIngestDate`;
   if (params.orderBy) {
       var col = params.orderBy.split("|")[0];
@@ -218,7 +222,7 @@ async function getCsv(params={}) {
   Input: params are passed as req.query
 */
 async function getGeoJson(params={}) {
-    console.log('visit.service | getGeoJson |', params);
+    console.log('ingest.service | getGeoJson |', params);
     var where = pgUtil.whereClause(params, staticColumns, 'WHERE');
     if (params.surveyHasIndividuals) {if (where.text) {where.text += ' AND ';} else {where.text = ' WHERE '} where.text += common.surveyHasIndividuals();}
     where.pretty = JSON.stringify(params).replace(/\"/g,'');
@@ -257,7 +261,7 @@ async function getGeoJson(params={}) {
             ${where.text}
         ) AS f
     ) AS fc;`
-    console.log('visit.service | getGeoJson |', where.text, where.values);
+    console.log('ingest.service | getGeoJson |', where.text, where.values);
     return await query(sql, where.values);
 }
 
@@ -266,10 +270,10 @@ async function getShapeFile(params={}, excludeHidden=1) {
   where.pretty = JSON.stringify(params).replace(/\"/g,'');
   where.combined = where.text;
   where.values.map((val, idx) => {
-    console.log('visit.service::getShapeFile | WHERE values', val, idx);
+    console.log('ingest.service::getShapeFile | WHERE values', val, idx);
     where.combined = where.combined.replace(`$${idx+1}`, `'${val}'`)
   })
-  console.log('visit.service::getShapeFile | WHERE', where);
+  console.log('ingest.service::getShapeFile | WHERE', where);
   //Important: notes and comments fields have characters that crash the shapefile dump. It must be handled.
   let qry = `SELECT * 
   FROM visit_shapefile
@@ -285,12 +289,12 @@ async function create(body) {
     text = `insert into ${tblName} (${queryColumns.named}) values (${queryColumns.numbered}) returning ${tblKey}`;
     console.log(text, queryColumns.values);
     var res = await query(text, queryColumns.values);
-    console.log('visit.service.create | returning: ', res);
+    console.log('ingest.service.create | returning: ', res);
     return res;
 }
 
 async function update(id, body) {
-    console.log(`visit.service.update | before pgUtil.parseColumns`, staticColumns);
+    console.log(`ingest.service.update | before pgUtil.parseColumns`, staticColumns);
     var queryColumns = pgUtil.parseColumns(body, 2, [id], staticColumns);
     text = `update ${tblName} set (${queryColumns.named}) = (${queryColumns.numbered}) where ${tblKey}=$1 returning ${tblKey}`;
     console.log(text, queryColumns.values);

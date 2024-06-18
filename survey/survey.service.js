@@ -6,23 +6,21 @@ const query = db.query;
 const pgUtil = require('apiDb/db_pg_util');
 const common = require('apiDb/db_common');
 var staticColumns = []; //all tables' columns in a single 1D array
-var tableColumns = []; //each table's columns by table name
+var tableColumns = {}; //each table's columns by table name
 const shapeFile = require('apiDb/db_shapefile').shapeFile;
 
 module.exports = {
     getColumns,
     getCount,
-    getPoolIds,
-    getTypes,
+    getWaterBodies,
     getObservers,
     getYears,
     getAll,
     getById,
-    getByPoolId,
+    getByWaterBody,
     getGeoJson,
     getShapeFile,
     upload,
-    history,
     create,
     update,
     delete: _delete
@@ -30,15 +28,19 @@ module.exports = {
 
 //file scope list of survey tables' columns retrieved at app startup (see 'getColumns()' below)
 const tables = [
-  "vt_town",
+  "loonwatch_event",
+  "loonwatch_observation",
+  "vt_loon_locations",
+  "vt_water_body",
   "vt_county",
+  "vt_town",
   "user"
 ];
 for (i=0; i<tables.length; i++) {
   pgUtil.getColumns(tables[i], staticColumns) //run it once on init: to create the array here. also displays on console.
     .then(res => {
       tableColumns[res.tableName] = res.tableColumns;
-      //console.log(tableColumns);
+      //console.log('survey.service=>getColumns=>tableColumns', tableColumns);
       return res;
     })
     .catch(err => {console.log(`survey.service.getColumns | table:${tables[i]} | error: `, err.message);});
@@ -58,8 +60,8 @@ async function getCount(query={}) {
     return await query(text, where.values);
 }
 
-function getPoolIds(params={}) {
-  var order = ' ORDER BY "surveyPoolId"';
+function getWaterBodies(params={}) {
+  var order = ' ORDER BY wbtextid';
   if (params.orderBy) {
       var col = params.orderBy.split("|")[0];
       var dir = params.orderBy.split("|")[1]; dir = dir ? dir : '';
@@ -67,21 +69,13 @@ function getPoolIds(params={}) {
   }
   const where = pgUtil.whereClause(params, staticColumns);
   const text = `
-  SELECT DISTINCT("surveyPoolId")
-  FROM ${tblName}
+  SELECT DISTINCT(lweventwaterbodyid)
+  FROM loonwatch_event
   ${where.text}
   ${order}
   `;
   console.log(text, where.values);
   return query(text, where.values);
-}
-
-function getTypes() {
-  const text = `
-  SELECT *
-  FROM def_survey_type
-  `;
-  return query(text);
 }
 
 function getYears(params={}) {
@@ -117,7 +111,7 @@ async function getObservers(params={}) {
 }
 
 async function getAll(params={}) {
-    var orderClause = 'ORDER BY "surveyDate" DESC, "surveyTime" DESC';
+    var orderClause = 'ORDER BY lweventdate DESC, lweventstart DESC';
     if (params.orderBy) {
         var col = params.orderBy.split("|")[0];
         var dir = params.orderBy.split("|")[1]; dir = dir ? dir : '';
@@ -126,158 +120,29 @@ async function getAll(params={}) {
     //custom handling of date-range fields, for now, because 'whereClause' can't handle it
     var range = '';
     if (params.surveyDateBeg && params.surveyDateEnd) {
-      range = `WHERE "surveyDate" BETWEEN '${params.surveyDateBeg}' AND '${params.surveyDateEnd}' `;
+      range = `WHERE lweventdate BETWEEN '${params.surveyDateBeg}' AND '${params.surveyDateEnd}' `;
       delete params.surveyDateBeg; delete params.surveyDateEnd;
     }
     where = pgUtil.whereClause(params, staticColumns, range!=''?'AND':'WHERE');
     const text = `
     SELECT
-    "townId",
-    "townName",
-    "countyName",
-    surveyuser.username AS "surveyUserName",
-    surveyuser.id AS "surveyUserId",
-    survey.*,
-    survey."updatedAt" AS "surveyUpdatedAt",
-    survey."createdAt" AS "surveyCreatedAt",
-    (SELECT array_agg(
-      "surveyAmphibEdgeWOFR"+"surveyAmphibEdgeSPSA"+"surveyAmphibEdgeJESA"+"surveyAmphibEdgeBLSA"+
-      "surveyAmphibInteriorWOFR"+"surveyAmphibInteriorSPSA"+"surveyAmphibInteriorJESA"+"surveyAmphibInteriorBLSA")
-      AS "sumAmphib" FROM vpsurvey_amphib WHERE "surveyAmphibSurveyId"="surveyId"),
-    --vpsurvey_amphib.*,
-    --to_json(vpsurvey_amphib) AS "surveyAmphib",
-    (SELECT
-      "surveyMacroNorthFASH"+"surveyMacroEastFASH"+"surveyMacroSouthFASH"+"surveyMacroWestFASH"+
-      "surveyMacroNorthCDFY"+"surveyMacroEastCDFY"+"surveyMacroSouthCDFY"+"surveyMacroWestCDFY"
-      AS "sumMacros" FROM vpsurvey_macro WHERE "surveyMacroSurveyId"="surveyId"),
-    --vpsurvey_macro.*,
-    --to_json(vpsurvey_macro) AS "surveyMacros",
-    --vpsurvey_year.*,
-    --vpsurvey_photos.*,
-    (SELECT "surveyTypeName" FROM def_survey_type WHERE def_survey_type."surveyTypeId"=${tblName}."surveyTypeId"),
-    (SELECT json_agg(sp) AS "surveyPhotos" FROM (
-        SELECT "surveyPhotoUrl","surveyPhotoSpecies","surveyPhotoName"
-        FROM vpsurvey_photos
-        WHERE "surveyId"="surveyPhotoSurveyId"
-      ) AS sp),
-    "mappedPoolId" AS "poolId",
-    "mappedPoolStatus" AS "poolStatus",
-    SPLIT_PART(ST_AsLatLonText("mappedPoolLocation", 'D.DDDDDD'), ' ', 1) AS latitude,
-    SPLIT_PART(ST_AsLatLonText("mappedPoolLocation", 'D.DDDDDD'), ' ', 2) AS longitude,
-    mappeduser.username AS "mappedUserName",
-    vpmapped."updatedAt" AS "mappedUpdatedAt",
-    vpmapped."createdAt" AS "mappedCreatedAt"
-    FROM survey
-    INNER JOIN vpmapped ON "mappedPoolId"="surveyPoolId"
-    --INNER JOIN def_survey_type ON ${tblName}."surveyTypeId"=def_survey_type."surveyTypeId"
-    --INNER JOIN vpsurvey_amphib ON "surveyId"="surveyAmphibSurveyId"
-    --INNER JOIN vpsurvey_macro ON "surveyId"="surveyMacroSurveyId"
-    LEFT JOIN vpsurvey_year ON "surveyId"="surveyYearSurveyId"
-    --LEFT JOIN vpsurvey_photos ON "surveyId"="surveyPhotoSurveyId"
-    LEFT JOIN vpuser AS surveyuser ON "surveyUserId"=surveyuser."id"
-    LEFT JOIN vpuser AS mappeduser ON "mappedUserId"=mappeduser."id"
-    LEFT JOIN vptown ON "mappedTownId"="townId"
-    LEFT JOIN vpcounty ON "govCountyId"="townCountyId"
+    *
+    FROM loonwatch_event
+    INNER JOIN vt_water_body ON lwEventWaterBodyId=wbtextid
+    INNER JOIN loonwatch_observation ON lwobseventid=lweventid
+    LEFT JOIN vt_town ON lwEventTownId="townId"
+    LEFT JOIN vt_county ON "govCountyId"="townCountyId"
     ${range + where.text} ${orderClause};`;
     console.log(text, where.values);
     return await query(text, where.values);
 }
 
-function getById(surveyId) {
-  const text = `
-  SELECT
-  "townId",
-  "townName",
-  "countyName",
-  surveyuser.username AS "surveyUserLogin",
-  --CONCAT(surveyuser.firstname, ' ', surveyuser.lastname) AS "surveyUserFullName",
-  --surveyuser.id AS "surveyUserId",
-  survey.*,
-  survey."updatedAt" AS "surveyUpdatedAt",
-  survey."createdAt" AS "surveyCreatedAt",
-  def_survey_type.*,
-
-  (SELECT username AS "surveyAmphibObs1"
-  FROM vpsurvey_amphib
-  INNER JOIN vpuser ON "surveyAmphibObsId"=id
-  WHERE "surveyAmphibSurveyId"="surveyId"
-  AND LOWER(email)=LOWER("surveyAmphibJson"->'1'->>'surveyAmphibObsEmail')),
-
-  (SELECT username AS "surveyAmphibObs2"
-  FROM vpsurvey_amphib
-  INNER JOIN vpuser ON "surveyAmphibObsId"=id
-  WHERE "surveyAmphibSurveyId"="surveyId"
-  AND LOWER(email)=LOWER("surveyAmphibJson"->'2'->>'surveyAmphibObsEmail')),
-
-  "surveyAmphibJson"->'1'->>'surveyAmphibObsEmail' AS "surveyAmphibObs1Email",
-  "surveyAmphibJson"->'2'->>'surveyAmphibObsEmail' AS "surveyAmphibObs2Email",
-  
---  (SELECT json_agg(so) AS "surveyAmphibObs" FROM (
---    SELECT username, email, id
---    FROM vpsurvey_amphib
---    INNER JOIN vpuser ON "surveyAmphibObsId"=id
---    WHERE "surveyAmphibSurveyId"="surveyId"
---  ) as so),
-
-  (SELECT array_agg
-    ("surveyAmphibEdgeWOFR"+"surveyAmphibEdgeSPSA"+"surveyAmphibEdgeJESA"+"surveyAmphibEdgeBLSA"+
-    "surveyAmphibInteriorWOFR"+"surveyAmphibInteriorSPSA"+"surveyAmphibInteriorJESA"+"surveyAmphibInteriorBLSA")
-    AS "sumAmphib"
-    FROM vpsurvey_amphib
-    WHERE "surveyAmphibSurveyId"="surveyId"),
-  (SELECT
-      "surveyMacroNorthFASH"+"surveyMacroEastFASH"+"surveyMacroSouthFASH"+"surveyMacroWestFASH"+
-      "surveyMacroNorthCDFY"+"surveyMacroEastCDFY"+"surveyMacroSouthCDFY"+"surveyMacroWestCDFY"
-      AS "sumMacros" FROM vpsurvey_macro
-      WHERE "surveyMacroSurveyId"="surveyId"),
-  (SELECT json_agg(sp) AS "surveyPhotos" FROM (
-      SELECT "surveyPhotoUrl","surveyPhotoSpecies","surveyPhotoName"
-      FROM vpsurvey_photos
-      WHERE "surveyId"="surveyPhotoSurveyId"
-    ) AS sp),
-  "mappedPoolId" AS "poolId",
-  "mappedPoolStatus" AS "poolStatus",
-  SPLIT_PART(ST_AsLatLonText("mappedPoolLocation", 'D.DDDDDD'), ' ', 1) AS latitude,
-  SPLIT_PART(ST_AsLatLonText("mappedPoolLocation", 'D.DDDDDD'), ' ', 2) AS longitude,
-  mappeduser.username AS "mappedUserName",
-  vpmapped."updatedAt" AS "mappedUpdatedAt",
-  vpmapped."createdAt" AS "mappedCreatedAt"
-  FROM survey
-  INNER JOIN vpmapped ON "mappedPoolId"="surveyPoolId"
-  INNER JOIN def_survey_type ON ${tblName}."surveyTypeId"=def_survey_type."surveyTypeId"
-  --LEFT JOIN vpsurvey_photos ON "surveyPhotoSurveyId"="surveyId"
-  LEFT JOIN vpuser AS surveyuser ON "surveyUserId"=surveyuser."id"
-  LEFT JOIN vpuser AS mappeduser ON "mappedUserId"=mappeduser."id"
-  LEFT JOIN vptown ON "mappedTownId"="townId"
-  LEFT JOIN vpcounty ON "govCountyId"="townCountyId"
-  WHERE "surveyId"=$1`
-
-  return query(text, [surveyId]);
+function getById(eventId) {
+  return getAll({"lweventid":eventId})
 }
 
-function getByPoolId(poolId) {
-  const text = `
-  SELECT
-  "townId",
-  "townName",
-  "countyName",
-  surveyuser.username AS "surveyUserName",
-  surveyuser.id AS "surveyUserId",
-  --surveyuser.email AS "surveyUserEmail",
-  survey.*,
-  survey."updatedAt" AS "surveyUpdatedAt",
-  survey."createdAt" AS "surveyCreatedAt",
-  vpmapped.*,
-  vpmapped."updatedAt" AS "mappedUpdatedAt",
-  vpmapped."createdAt" AS "mappedCreatedAt"
-  FROM ${tblName}
-  INNER JOIN vpmapped ON "mappedPoolId"="surveyPoolId"
-  LEFT JOIN vpuser AS surveyuser ON "surveyUserId"="id"
-  LEFT JOIN vptown ON "mappedTownId"="townId"
-  LEFT JOIN vpcounty ON "govCountyId"="townCountyId"
-  WHERE "surveyPoolId"=$1`
-
-  return query(text, [poolId]);
+function getByWaterBody(wbTextId) {
+  return getAll({"wbtextid":wbTextId})
 }
 
 async function getGeoJson(params={}) {
@@ -440,7 +305,7 @@ try { //try-catch with promise doesn't work wrapped around fastCsv call. Put ins
             var amphibRow = {}; //array of objects of colum:value pairs to insert in jsonb column of vpsurvey_amphib
             var macroRow = {}; //array of objects of colum:value pairs to insert in jsonb column of vpsurvey_macro
             var yearRow = {}; //single object of colum:value pairs to insert in jsonb column of vpsurvey_year
-            var photoRow = {}; //single object of colum:value pairs to insert in jsonb column of vpsurvey_photos
+            var obsRow = {}; //single object of colum:value pairs to insert in jsonb column of vpsurvey_photos
             var colum = null;
             var split = [];
             var obsId = 1; //obsId is 1-based for actual observers
@@ -455,7 +320,7 @@ try { //try-catch with promise doesn't work wrapped around fastCsv call. Put ins
               if ('' === value) {value = null;} //convert empty strings to null
               if (`${Number(value)}` === value) {value = Number(value);} //convert string number to numbers (MUST USE '===' or it converts bool to int!!!)
               if (tableColumns[tblName].includes(colum)) {surveyRow[colum]=value;}
-              if (tableColumns['vpsurvey_photos'].includes(colum)) {photoRow[colum]=value;}
+              if (tableColumns['vpsurvey_photos'].includes(colum)) {obsRow[colum]=value;}
               if (tableColumns['vpsurvey_year'].includes(colum)) {yearRow[colum]=value;}
               if (tableColumns['vpsurvey_macro'].includes(colum)) {macroRow[colum]=value;}
               if (tableColumns['vpsurvey_amphib'].includes(colum)) {amphibRow[obsId][colum]=value;}
@@ -464,7 +329,7 @@ try { //try-catch with promise doesn't work wrapped around fastCsv call. Put ins
             surveyRow['surveyAmphibJson'] = amphibRow; //set the survey jsonb column value for survey_amphib table
             surveyRow['surveyMacroJson'] = macroRow; //set the survey jsonb column value for survey_macro table
             surveyRow['surveyYearJson'] = yearRow; //set the survey jsonb column value for survey_year table
-            surveyRow['surveyPhotoJson'] = photoRow; //set the survey jsonb column value for survey_photos table
+            surveyRow['surveyPhotoJson'] = obsRow; //set the survey jsonb column value for survey_photos table
             valArr.push(surveyRow);
           }
           var columns = [];
@@ -541,43 +406,94 @@ async function update_log_upload_attempt(surveyUploadId=0, params={}) {
 }
 
 /*
-  survey INSERT uses server-side TRIGGER functions to handle the different tables.
-
-  See upload for how that's handled.
+  INSERT a new loonwatch_event
 */
-async function create(body) {
-    var queryColumns = pgUtil.parseColumns(body, 1, [], staticColumns);
-    text = `insert into ${tblName} (${queryColumns.named}) values (${queryColumns.numbered}) returning "surveyId"`;
+function create(body) {
+  return new Promise((resolve, reject) => {
+    console.log('survey.service=>create', body);
+    let queryColumns = pgUtil.parseColumns(body, 1, [], tableColumns['loonwatch_event']);
+    text = `insert into loonwatch_event (${queryColumns.named}) values (${queryColumns.numbered}) returning lweventid`;
     console.log(text, queryColumns.values);
-    return new Promise(async (resolve, reject) => {
-      await query(text, queryColumns.values)
-        .then(res => {resolve(res);})
-        .catch(err => {reject(err);});
+    query(text, queryColumns.values)
+      .then(res => {
+        console.log('survey.service=>create RESULT rows:', res.rows);
+        upsertObservations(res.rows[0].lweventid, body.observations, 0)
+          .then(res => {resolve(res)})
+          .catch(err => {reject(err)})
+      })
+      .catch(err => {reject(err)});
     })
 }
 
-async function update(id, body) {
-    var queryColumns = pgUtil.parseColumns(body, 2, [id], staticColumns);
-    text = `update survey set (${queryColumns.named}) = (${queryColumns.numbered}) where "surveyId"=$1 returning "surveyId"`;
-    console.log(text, queryColumns.values);
-    return new Promise(async (resolve, reject) => {
-      await query(text, queryColumns.values)
-        .then(res => {resolve(res);})
-        .catch(err => {reject(err);});
+/*
+  UPDATE an existing loonwatch_event
+*/
+function update(id, body) {
+  var queryColumns = pgUtil.parseColumns(body, 2, [id], tableColumns['loonwatch_event']);
+  text = `update loonwatch_event set (${queryColumns.named}) = (${queryColumns.numbered}) where lweventid=$1 returning lweventid`;
+  console.log(text, queryColumns.values);
+  return new Promise((resolve, reject) => {
+    query(text, queryColumns.values)
+      .then(res => {
+        console.log('survey.service=>update RESULT rows:', res.rows);
+        upsertObservations(res.rows[0].lweventid, body.observations, 1)
+          .then(res => {resolve(res)})
+          .catch(err => {reject(err)})
+      })
+      .catch(err => {reject(err);});
     })
+}
+
+/*
+  INSERT or UPDATE an array of observations for a single lwEventId into loonwatch_observation
+*/
+function upsertObservations(lweventid=0, jsonArr=[], update=0) {
+  return new Promise((resolve, reject) => {
+    if (!lweventid) {reject({message:'lwEventId required to Upsert observations.'})}
+    if (!jsonArr.length) {return resolve({message:'Observation Array empty. No Upsert.'})}
+    try {
+      var valArr = [];
+      console.log('upsertObservations | jsonArr', jsonArr);
+      for (i=0; i<jsonArr.length; i++) { //iterate over jsonData objects in jsonArray
+        var obsRow = jsonArr[i]; //single object of colum:value pairs for one insert row into loonwatch_observation
+        obsRow['lwobseventid']=lweventid;
+        obsRow.lwobsgeolocation = null;
+        valArr.push(obsRow);
+      } //end for loop
+      var columns = [];
+      var query = null;
+      var obsColumns = tableColumns['loonwatch_observation']; //make a copy so it can be altered in case of UPDATE, below.
+      //delete obsColumns.lwobsgeolocation; //don't ship this field - it's calculated by db trigger from lat/lon
+      //console.log('survey.service=>create columns', obsColumns);
+      //https://stackoverflow.com/questions/37300997/multi-row-insert-with-pg-promise
+      columns = new db.pgp.helpers.ColumnSet(obsColumns, {table: 'loonwatch_observation'});
+      //console.log('survey.service=>create columns', columns);
+      query = db.pgp.helpers.insert(valArr, columns);
+      if (update) {
+        query += `
+        ON CONFLICT ON CONSTRAINT ""
+        DO UPDATE SET ("${obsColumns.join('","')}")=(EXCLUDED."${obsColumns.join('",EXCLUDED."')}")`;
+      }
+      query += ' RETURNING *';
+      console.log('survey.service::upsertObservations | query', query); //verbatim query with values for testing
+      //console.log('survey.service.service::upsertObservations | columns', columns);
+      //console.log('survey.service.service::upsertObservations | values', valArr);
+      db.pgpDb.many(query) //'many' for expected return values
+        .then(res => {
+          console.log('survey.service=>upsertObservations | pgpDb SUCCESS', res);
+          resolve(res);
+        })
+        .catch(err => {
+          console.log('survey.service=>upsertObservations| pgpDb ERROR', err.message);
+          reject(err);
+        }); //end pgpDb
+    } catch (err) {
+      console.log('survey.service=>upsertObservations | try-catch ERROR', err.message);
+      reject(err);
+    }
+  }); //end Promise
 }
 
 async function _delete(id) {
-    return await query(`delete from ${tblName} where "surveyId"=$1;`, [id]);
-}
-
-async function history(params={}) {
-  const where = pgUtil.whereClause(params, staticColumns);
-  const text = `
-  SELECT *
-  FROM vpsurvey_uploads
-  ${where.text}
-  `;
-  console.log(text, where.values);
-  return await query(text, where.values);
+    return await query(`DELETE FROM loonwatch_event CASCADE WHERE lweventid=$1;`, [id]);
 }

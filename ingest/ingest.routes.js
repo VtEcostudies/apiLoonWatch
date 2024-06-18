@@ -1,11 +1,11 @@
 ﻿const router = require('express').Router();
 const routes = require('apiUtility/routes');
 const convert = require('json-2-csv');
-const service = require('./visit.service');
-const uploads = require('./visit.upload.service');
-const s123svc = require('./visit.s123.service');
+const service = require('./ingest.service');
+const uploads = require('./ingest.upload.service');
+const s123svc = require('./ingest.s123.service');
 const multer = require('multer');
-const upFile = multer({ dest: 'visit/uploads/' });
+const upFile = multer({ dest: 'ingest/uploads/' });
 const fs = require('fs');
 
 // routes NOTE: routes with names for same method (ie. GET) must be above routes
@@ -136,7 +136,7 @@ function getByLocation(req, res, next) {
 }
 
 function getCsv(req, res, next) {
-    console.log('visit.routes | getCsv', req.query);
+    console.log('ingest.routes | getCsv', req.query);
     service.getCsv(req.query)
         .then(items => {
             if (items.rows) {
@@ -164,8 +164,8 @@ function getCsv(req, res, next) {
   http://localhost:4000/mapped/geojson?mappedPoolStatus|IN=Confirmed&mappedPoolStatus|IN=Probable
 */
 function getGeoJson(req, res, next) {
-    console.log('visit.routes::getGeoJson | req.query:', req.query);
-    console.log('visit.routes::getGeoJson | req.user:', req.user);
+    console.log('ingest.routes::getGeoJson | req.query:', req.query);
+    console.log('ingest.routes::getGeoJson | req.user:', req.user);
 
     var statusParam = req.query.mappedPoolStatus || req.query['mappedPoolStatus|IN'] || req.query['mappedPoolStatus|NOT IN'];
 
@@ -189,7 +189,7 @@ function getGeoJson(req, res, next) {
 }
 
 function getShapeFile(req, res, next) {
-    console.log('visit.routes::getShapeFile | req.query:', req.query);
+    console.log('ingest.routes::getShapeFile | req.query:', req.query);
     //console.log('vpMapped.routes::getShapeFile | req.user:', req.user);
     //console.log('vpMapped.routes::getShapeFile | req.dbUser:', req.dbUser);
 
@@ -203,7 +203,7 @@ function getShapeFile(req, res, next) {
     service.getShapeFile(req.query, excludeHidden)
         .then(shpObj => {
             let fileSpec = `${process.cwd()}/${shpObj.all}`;
-            console.log('visit.routes::getShapeFile result', process.cwd(), shpObj.all);
+            console.log('ingest.routes::getShapeFile result', process.cwd(), shpObj.all);
             if (req.query.download) {
                 res.setHeader('Content-disposition', `attachment; filename=${shpObj.filename}`);
                 res.setHeader('Content-type', 'application/x-tar');
@@ -219,10 +219,10 @@ function getShapeFile(req, res, next) {
             }
         })
         .catch(ret => {
-            console.log('visit.routes::getShapeFile ERROR | ret:', ret);
+            console.log('ingest.routes::getShapeFile ERROR | ret:', ret);
             let errs = ''; Object.keys(ret.error).map(key => {errs += ret.error[key]; errs += '|';})
             let err = new Error(errs);
-            console.log('visit.routes::getShapeFile ERROR | Constructed error object:', err);
+            console.log('ingest.routes::getShapeFile ERROR | Constructed error object:', err);
             next(err);
         })
 }
@@ -233,7 +233,7 @@ function create(req, res, next) {
     service.create(req.body)
         .then((item) => res.json(item))
         .catch(err => {
-            console.log('visit.routes.create | error: ' , err);
+            console.log('ingest.routes.create | error: ' , err);
             if (err.code == 23505 && err.constraint == 'vpvisit_pkey') {
                 err.name = 'UniquenessConstraintViolation';
                 err.message = `Visit ID '${req.body.visitId}' is already taken. Please choose a different Visit ID.`;
@@ -243,11 +243,11 @@ function create(req, res, next) {
 }
 
 function update(req, res, next) {
-    console.log('visit.routes.update', req.body);
+    console.log('ingest.routes.update', req.body);
     service.update(req.params.id, req.body)
         .then((item) => res.json(item))
         .catch(err => {
-            console.log('visit.routes.update | error: ' , err);
+            console.log('ingest.routes.update | error: ' , err);
             if (err.code == 23505 && err.constraint == 'vpvisit_pkey') {
                 err.name = 'UniquenessConstraintViolation';
                 err.message = `Visit ID '${req.body.visitId}' is already taken. Please choose a different Visit ID.`;
@@ -263,13 +263,13 @@ function _delete(req, res, next) {
 }
 
 function upload(req, res, next) {
-    console.log('visit.routes::upload() | req.file:', req.file);
-    console.log('visit.routes::upload() | req.body', req.body);
-    console.log('visit.routes::upload() | req.query', req.query);
+    console.log('ingest.routes::upload() | req.file:', req.file);
+    console.log('ingest.routes::upload() | req.body', req.body);
+    console.log('ingest.routes::upload() | req.query', req.query);
     uploads.upload(req)
         .then((item) => {res.json(item);})
         .catch(err => {
-            console.log('visit.routes::upload() | error: ', err.code, '|', err.message, '|', err.detail);
+            console.log('ingest.routes::upload() | error: ', err.code, '|', err.message, '|', err.detail);
             next(err);
         });
 }

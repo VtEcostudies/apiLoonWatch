@@ -15,18 +15,17 @@ router.get('/shapefile', getShapeFile);
 router.get('/columns', getColumns);
 router.get('/routes', getRoutes);
 router.get('/count', getCount);
-router.get('/poolids', getPoolIds); //get surveyed pool ids
-router.get('/types', getTypes); //get pool-survey types
-router.get('/observers', getObservers); //get pool-survey observers
-router.get('/years', getYears); //get pool-survey years
+router.get('/waterBodies', getWaterBodies); //get surveyed waterBody ids
+router.get('/types', getTypes); //get waterBody-survey types
+router.get('/observers', getObservers); //get waterBody-survey observers
+router.get('/years', getYears); //get waterBody-survey years
 router.get('/', getAll);
 router.get('/s123', getS123);
 router.get('/s123/attachments', getS123attachments);
 router.get('/s123/services', getS123Services);
 router.get('/s123/uploads', getS123Uploads);
 router.get('/:id', getById);
-router.get('/pool/:poolId', getByPoolId);
-//router.get('/upload/history', getUploadHistory);
+router.get('/waterBody/:waterBodyId', getByWaterBody);
 router.post('/s123', postS123);
 router.post('/s123/attachments', postS123Attachments);
 router.post('/s123/all', postS123All);
@@ -102,8 +101,8 @@ function getCount(req, res, next) {
         .catch(err => next(err));
 }
 
-function getPoolIds(req, res, next) {
-    service.getPoolIds(req.query)
+function getWaterBodies(req, res, next) {
+    service.getWaterBodies(req.query)
         .then(items => res.json(items))
         .catch(err => next(err));
 }
@@ -138,14 +137,14 @@ function getById(req, res, next) {
         .catch(err => next(err));
 }
 
-function getByPoolId(req, res, next) {
-    service.getByPoolId(req.params.poolId)
+function getByWaterBody(req, res, next) {
+    service.getByWaterBody(req.params.waterBodyId)
         .then(item => item ? res.json(item.rows) : res.sendStatus(404))
         .catch(err => next(err));
 }
 
 function getCsv(req, res, next) {
-    console.log('vpSurvey.routes | getCsv', req.query);
+    console.log('survey.routes | getCsv', req.query);
     service.getAll(req.query)
         .then(items => {
             if (items.rows) {
@@ -173,8 +172,8 @@ function getCsv(req, res, next) {
   http://localhost:4000/survey/geojson?mappedPoolStatus|IN=Confirmed&mappedPoolStatus|IN=Probable
 */
 function getGeoJson(req, res, next) {
-  console.log('vpSurvey.routes::getGeoJson | req.query:', req.query);
-  console.log('vpSurvey.routes::getGeoJson | req.user:', req.user);
+  console.log('survey.routes::getGeoJson | req.query:', req.query);
+  console.log('survey.routes::getGeoJson | req.user:', req.user);
 
   var statusParam = req.query.mappedPoolStatus || req.query['mappedPoolStatus|IN'] || req.query['mappedPoolStatus|NOT IN'];
 
@@ -198,8 +197,8 @@ function getGeoJson(req, res, next) {
 }
 
 function getShapeFile(req, res, next) {
-    console.log('vpSurvey.routes::getShapeFile | req.query:', req.query);
-    console.log('vpSurvey.routes::getShapeFile | req.user:', req.user);
+    console.log('survey.routes::getShapeFile | req.query:', req.query);
+    console.log('survey.routes::getShapeFile | req.user:', req.user);
 
     var statusParam = req.query.mappedPoolStatus || req.query['mappedPoolStatus|IN'] || req.query['mappedPoolStatus|NOT IN'];
     var excludeHidden = 0;
@@ -211,7 +210,7 @@ function getShapeFile(req, res, next) {
     service.getShapeFile(req.query, excludeHidden)
         .then(shpObj => {
             let fileSpec = `${process.cwd()}/${shpObj.all}`;
-            console.log('vpSurvey.routes::getShapeFile result', process.cwd(), shpObj.all);
+            console.log('survey.routes::getShapeFile result', process.cwd(), shpObj.all);
             if (req.query.download) {
                 res.setHeader('Content-disposition', `attachment; filename=${shpObj.filename}`);
                 res.setHeader('Content-type', 'application/x-tar');
@@ -227,10 +226,10 @@ function getShapeFile(req, res, next) {
             }
         })
         .catch(ret => {
-            console.log('vpSurvey.routes::getShapeFile ERROR | ret:', ret);
+            console.log('survey.routes::getShapeFile ERROR | ret:', ret);
             let errs = ''; Object.keys(ret.error).map(key => {errs += ret.error[key]; errs += '|';})
             let err = new Error(errs);
-            console.log('vpSurvey.routes::getShapeFile ERROR | Constructed error object:', err);
+            console.log('survey.routes::getShapeFile ERROR | Constructed error object:', err);
             next(err);
         })
 }
@@ -241,17 +240,17 @@ function create(req, res, next) {
     service.create(req.body)
         .then((item) => {res.json(item);})
         .catch(err => {
-            console.log('vpSurvey.routes.create | error: ' , err);
+            console.log('survey.routes.create | error: ' , err);
             next(err);
         });
 }
 
 function update(req, res, next) {
-    console.log('vpSurvey.routes.update', req.body);
+    console.log('survey.routes.update', req.body);
     service.update(req.params.id, req.body)
         .then((item) => {res.json(item);})
         .catch(err => {
-            console.log('vpSurvey.routes.update | error: ' , err);
+            console.log('survey.routes.update | error: ' , err);
             if (err.code == 23505 && err.constraint == 'vpSurvey_pkey') {
                 err.name = 'UniquenessConstraintViolation';
                 err.message = `Review ID '${req.body.reviewId}' is already taken. Please choose a different Review ID.`;
@@ -267,19 +266,13 @@ function _delete(req, res, next) {
 }
 
 function upload(req, res, next) {
-    console.log('vpSurvey.routes::upload() | req.file:', req.file);
-    console.log('vpSurvey.routes::upload() | req.body', req.body);
-    console.log('vpSurvey.routes::upload() | req.query', req.query);
+    console.log('survey.routes::upload() | req.file:', req.file);
+    console.log('survey.routes::upload() | req.body', req.body);
+    console.log('survey.routes::upload() | req.query', req.query);
     service.upload(req)
         .then((item) => {res.json(item);})
         .catch(err => {
-            console.log('vpSurvey.routes::upload() | error: ', err.code, '|', err.message, '|', err.detail);
+            console.log('survey.routes::upload() | error: ', err.code, '|', err.message, '|', err.detail);
             next(err);
         });
-}
-
-function getUploadHistory(req, res, next) {
-    uploads.history(req.query)
-        .then(items => res.json(items))
-        .catch(err => next(err));
 }

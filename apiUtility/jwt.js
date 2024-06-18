@@ -41,7 +41,7 @@ function jwt() {
 
             { url: /^\/loonwatch\/*/, methods: ['GET'] },
 
-            { url: /^\/survey\/*/, methods: ['GET'] },
+            { url: /^\/loonwatch\/survey\/*/, methods: ['GET','PUT','POST','DELETE'] },
 
             //for testing. remove these in production.
             //{ url: /^\/survey\/.*/, methods: ['POST'] },

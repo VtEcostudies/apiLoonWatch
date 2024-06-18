@@ -10,7 +10,7 @@ var tableColumns = []; //each table's columns by table name
 
 const defaultServiceId = config.survey123.visit.serviceId; //"service_b9c42b1cd7994b3a80ff4a57806b96b9"
 //subsequent, replaced: 'service_71386df693ec4db8868d7a7c64c50761'
-//original VPVisit DataSheet serviceId: service_71386df693ec4db8868d7a7c64c50761
+//original loonwatch_ingest DataSheet serviceId: service_71386df693ec4db8868d7a7c64c50761
 const defaultFeatureId = 0;
 const maximumFeatureId = 8;
 const attachFeatureIds = {1:'WOFR',2:'SPSA',3:'JESA',4:'BSSA',5:'FASH',6:'FNC',7:'OTHER',8:'POOL'};
@@ -29,7 +29,7 @@ module.exports = {
 const tables = [
   "loonwatch_ingest",
   "loonwatch_event",
-  "loonwatch_occurrence",
+  "loonwatch_observation",
   "vt_county",
   "vt_town"
 ];
@@ -39,7 +39,7 @@ for (i=0; i<tables.length; i++) {
       tableColumns[res.tableName] = res.tableColumns;
       return res;
     })
-    .catch(err => {console.log(`vpVisit.service.pg.pgUtil.getColumns | table:${tables[i]} | error: `, err.message);});
+    .catch(err => {console.log(`ingest.service.pg.pgUtil.getColumns | table:${tables[i]} | error: `, err.message);});
 }
 
 /* Get a list of serviceIds with MAX objectId and updatedAt from visit */
@@ -74,11 +74,11 @@ function getData(req) {
     if (!req.query.serviceId) {req.query.serviceId = defaultServiceId;}
     vpS123Util.getData(req.query)
       .then(jsonData => {
-        console.log('vpVisit.s123.service::getData | SUCCESS', jsonData);
+        console.log('ingest.s123.service::getData | SUCCESS', jsonData);
         resolve(jsonData);
       })
       .catch(err => {
-        console.log('vpVisit.s123.service::getData | ERROR', err.message);
+        console.log('ingest.s123.service::getData | ERROR', err.message);
         reject(err);
       });
     });
@@ -102,11 +102,11 @@ function getUpsertAll(req) {
       } else {
         await getUpsertData(req)
           .then(res => {
-            //console.log('vpVisit.s123.service::getupsertAll | RESULTS', res);
+            //console.log('ingest.s123.service::getupsertAll | RESULTS', res);
             sucs.push(res);
           })
           .catch(err => {
-            console.log('vpVisit.s123.service::getupsertAll | ERROR | err.message:', err.message, err);
+            console.log('ingest.s123.service::getupsertAll | ERROR | err.message:', err.message, err);
             errs.push(err);
           });
       }//end else
@@ -116,7 +116,7 @@ function getUpsertAll(req) {
     counts.target = limit;
     counts.total = z - offset;
     counts.aborted = abort;
-    console.log('vpVisit.s123.service::getupsertAll | RESULTS |', counts);
+    console.log('ingest.s123.service::getupsertAll | RESULTS |', counts);
     resolve({counts:counts, results:sucs, errors:errs})
   });
 }
@@ -131,14 +131,14 @@ function getUpsertData(req) {
           .catch(err => {reject(err);})
       })
       .catch(err => {
-        console.log('vpVisit.s123.service::getUpsertData | ERROR', err.message);
+        console.log('ingest.s123.service::getUpsertData | ERROR', err.message);
         reject(err);
       });
     });
 }
 
 /*
- INSERT or UPDATE VPVisit data from S123 VPVisit Data Sheet
+ INSERT or UPDATE loonwatch_ingest data from S123 loonwatch_ingest Data Sheet
 */
 function upsertVisit(req, jsonData) {
   var update = 0;
@@ -154,7 +154,7 @@ function upsertVisit(req, jsonData) {
       });
       //console.log('visit header', visitColumns);
       var valArr = [];
-      var visitRow = {}; //single object of colum:value pairs for one insert row into vpVisit
+      var visitRow = {}; //single object of colum:value pairs for one insert row into ingest
       var value = null; //temporary local var to hold values for scrubbing
       if (!jsonData.visitPoolId && !jsonData.visitPoolMapped) {jsonData.visitPoolId='NEW*';}
       Object.keys(jsonData).forEach(colum => { //iterate over keys in jsonData object (column names)
@@ -181,14 +181,14 @@ function upsertVisit(req, jsonData) {
         DO UPDATE SET ("${visitColumns.join('","')}")=(EXCLUDED."${visitColumns.join('",EXCLUDED."')}")`;
       }
       query += ' RETURNING "visitId","visitPoolId","visitGlobalId","visitObjectId","visitDataUrl","createdAt"!="updatedAt" AS updated ';
-      console.log('vpVisit.s123.service::upsertVisit | query', query); //verbatim query with values for testing
-      console.log('vpVisit.s123.service::upsertVisit | columns', columns);
-      console.log('vpVisit.s123.service::upsertVisit | values', valArr);
+      console.log('ingest.s123.service::upsertVisit | query', query); //verbatim query with values for testing
+      console.log('ingest.s123.service::upsertVisit | columns', columns);
+      console.log('ingest.s123.service::upsertVisit | values', valArr);
     } catch (err) {
       err.globalId = jsonData.globalid;
       err.objectId = jsonData.objectid;
       err.dataUrl = jsonData.dataUrl;
-      console.log('vpVisit.s123.service::upsertVisit | try-catch ERROR', err.message);
+      console.log('ingest.s123.service::upsertVisit | try-catch ERROR', err.message);
       reject(err);
     }
     db.pgpDb.many(query) //'many' for expected return values
@@ -212,7 +212,7 @@ function upsertVisit(req, jsonData) {
         err.objectId = jsonData.objectid;
         err.dataUrl = jsonData.dataUrl;
         err.hint = err.message; //err.message here does not percolate on return
-        console.log('vpVisit.s123.service::upsertVisit | pgpDb ERROR', err.message, err.dataUrl);
+        console.log('ingest.s123.service::upsertVisit | pgpDb ERROR', err.message, err.dataUrl);
         reject(err);
       }); //end pgpDb
   }); //end Promise
@@ -301,12 +301,12 @@ FeatureServer/[1,2,3,4,5,6,7,8]/
 queryAttachments
 ?objectIds=1&globalIds=&returnUrl=true&f=pjson
 
-To get attachments for a VPVisit
+To get attachments for a loonwatch_ingest
 - required: objectId from the parent Visit
 - optional: featureId of featureServer to limit results to a single repeatTable
-  - featureId == [1, 2, 3, ...8] for VPVisit
+  - featureId == [1, 2, 3, ...8] for loonwatch_ingest
 
-Without a featureId, getAttachments loops over all featureIds for VPVisit.
+Without a featureId, getAttachments loops over all featureIds for loonwatch_ingest.
 */
 function getAttachments(req) {
   return new Promise(async (resolve, reject) => {
@@ -319,17 +319,17 @@ function getAttachments(req) {
       req.query.featureId=i;
       await vpS123Util.getRepeatAttachments(req.query)
         .then(jsonParent => {
-          console.log(i, '| vpVisit.s123.service::getAttachments | SUCCESS', jsonParent);
+          console.log(i, '| ingest.s123.service::getAttachments | SUCCESS', jsonParent);
           parentId = jsonParent.parentObjectId;
           atchArr = atchArr.concat(jsonParent.attachmentInfos);
         })
         .catch(err => {
-          console.log(i, '| vpVisit.s123.service::getAttachments | ERROR', err.message);
+          console.log(i, '| ingest.s123.service::getAttachments | ERROR', err.message);
           atchErr.push(err.message);
         }); //end getRepeatAttachments
       } //end for-loop
-      console.log('vpVisit.s123.service::getAttachments | ERRORS', atchErr);
-      console.log('vpVisit.s123.service::getAttachments | RESULTS', atchArr);
+      console.log('ingest.s123.service::getAttachments | ERRORS', atchErr);
+      console.log('ingest.s123.service::getAttachments | RESULTS', atchArr);
       resolve({parentObjectId:parentId, attachmentInfos:atchArr});
     }); //end promise
 }
@@ -345,13 +345,13 @@ function getUpsertAttachments(req) {
         if (!req.query.serviceId) {req.query.serviceId = defaultServiceId;}
         getAttachments(req)
           .then(jsonParent => { //this getAttachments now retruns an array of attachmentInfos within a parent object
-            console.log('vpVisit.s123.service::getUpsertAttachments | SUCCESS', jsonParent);
+            console.log('ingest.s123.service::getUpsertAttachments | SUCCESS', jsonParent);
             upsertAttachments(req, jsonParent)
               .then(res => {resolve(res);})
               .catch(err => {reject(err);})
           })
           .catch(err => {
-            console.log('vpVisit.s123.service::getUpsertS123Attachments | ERROR', err.message);
+            console.log('ingest.s123.service::getUpsertS123Attachments | ERROR', err.message);
             reject(err);
           });
       })
@@ -439,20 +439,20 @@ function upsertAttachments(req, jsonParent) {
         DO UPDATE SET ("${photoColumns.join('","')}")=(EXCLUDED."${photoColumns.join('",EXCLUDED."')}")`;
       }
       query += ' RETURNING *';
-      console.log('vpVisit.s123.service::upsertAttachments | query', query); //verbatim query with values for testing
-      //console.log('vpVisit.s123.service::upsertAttachments | columns', columns);
-      //console.log('vpVisit.s123.service::upsertAttachments | values', valArr);
+      console.log('ingest.s123.service::upsertAttachments | query', query); //verbatim query with values for testing
+      //console.log('ingest.s123.service::upsertAttachments | columns', columns);
+      //console.log('ingest.s123.service::upsertAttachments | values', valArr);
       db.pgpDb.many(query) //'many' for expected return values
         .then(res => {
-          console.log('vpVisit.s123.service::upsertAttachments | pgpDb SUCCESS', res);
+          console.log('ingest.s123.service::upsertAttachments | pgpDb SUCCESS', res);
           resolve(res);
         })
         .catch(err => {
-          console.log('vpVisit.s123.service::upsertAttachments| pgpDb ERROR', err.message);
+          console.log('ingest.s123.service::upsertAttachments| pgpDb ERROR', err.message);
           reject(err);
         }); //end pgpDb
     } catch (err) {
-      console.log('vpVisit.s123.service::upsertAttachments | try-catch ERROR', err.message);
+      console.log('ingest.s123.service::upsertAttachments | try-catch ERROR', err.message);
       reject(err);
     }
   }); //end Promise
@@ -460,7 +460,7 @@ function upsertAttachments(req, jsonParent) {
 
 /*
   Original Visit Photo Attachment Update, to update visit table single-photo columns.
-  This is deprecated and was not designed to use the VPVisit repeatTable S123 services.
+  This is deprecated and was not designed to use the loonwatch_ingest repeatTable S123 services.
 
   Inserting one photo from S123 feature API like this:
   https://services1.arcgis.com/d3OaJoSAh2eh6OA9/ArcGIS/rest/services/service_71386df693ec4db8868d7a7c64c50761/FeatureServer/8/5/attachments?f=pjson
@@ -534,20 +534,20 @@ function updateVisitAttachment(req, jsonArr) {
       columns = new db.pgp.helpers.ColumnSet(photoColumns, {table: 'visit'});
       query = db.pgp.helpers.update(valArr, columns);
       query += ' RETURNING "visitId", ';
-      console.log('vpVisit.s123.service::updateAttachment | query', query); //verbatim query with values for testing
-      //console.log('vpVisit.s123.service::updateAttachment | columns', columns);
-      //console.log('vpVisit.s123.service::updateAttachment | values', valArr);
+      console.log('ingest.s123.service::updateAttachment | query', query); //verbatim query with values for testing
+      //console.log('ingest.s123.service::updateAttachment | columns', columns);
+      //console.log('ingest.s123.service::updateAttachment | values', valArr);
       db.pgpDb.many(query) //'many' for expected return values
         .then(res => {
-          console.log('vpVisit.s123.service::updateAttachment | pgpDb SUCCESS', res);
+          console.log('ingest.s123.service::updateAttachment | pgpDb SUCCESS', res);
           resolve(res);
         })
         .catch(err => {
-          console.log('vpVisit.s123.service::updateAttachment | pgpDb ERROR', err.message);
+          console.log('ingest.s123.service::updateAttachment | pgpDb ERROR', err.message);
           reject(err);
         }); //end pgpDb
     } catch (err) {
-      console.log('vpVisit.s123.service::updateAttachment | try-catch ERROR', err.message);
+      console.log('ingest.s123.service::updateAttachment | try-catch ERROR', err.message);
       reject(err);
     }
   }); //end Promise

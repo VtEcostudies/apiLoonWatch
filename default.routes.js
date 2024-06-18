@@ -14,6 +14,7 @@ function defRes(req, res, next) {
     let html = `
     <p><a href="${req.protocol}://${req.headers.host}/loonwatch">LoonWatch Data</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/loonwatch/count">LoonWatch Summary</a></p>
+    <p><a href="${req.protocol}://${req.headers.host}/loonwatch/survey">LoonWatch Surveys</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/lake">LoonWatch Survey Locations</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/waterBody">Vermont Water Bodies</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/bodyLake">Loon Locations & Water Bodies</a></p>
