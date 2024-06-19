@@ -26,7 +26,9 @@ try {
         next(res.status(401).json(err));
       } else {
         //ret = { message: err.message }; //hmm. not sure why I did this. UX display issues?
-        next(res.status(400).json(err));
+        let ret = JSON.parse(JSON.stringify(err));
+        ret.message = err.message;
+        next(res.status(400).json(ret));
       }
     } else {
       console.log('errorHandler | Other Error | error:', err)

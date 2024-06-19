@@ -417,9 +417,13 @@ function create(body) {
     query(text, queryColumns.values)
       .then(res => {
         console.log('survey.service=>create RESULT rows:', res.rows);
+        let eventRes = res; //save to append to observations result
         upsertObservations(res.rows[0].lweventid, body.observations, 0)
-          .then(res => {resolve(res)})
-          .catch(err => {reject(err)})
+        .then(res => {
+          res = Object.assign(res, eventRes);
+          resolve(res);
+        })
+        .catch(err => {reject(err)})
       })
       .catch(err => {reject(err)});
     })
@@ -436,8 +440,12 @@ function update(id, body) {
     query(text, queryColumns.values)
       .then(res => {
         console.log('survey.service=>update RESULT rows:', res.rows);
+        let eventRes = res; //save to append to observations result
         upsertObservations(res.rows[0].lweventid, body.observations, 1)
-          .then(res => {resolve(res)})
+          .then(res => {
+            res = Object.assign(res, eventRes);
+            resolve(res);
+          })
           .catch(err => {reject(err)})
       })
       .catch(err => {reject(err);});

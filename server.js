@@ -14,21 +14,6 @@ const process = require('process');
 var debug = false;
 var noJwt = false; //turn off web token security
 var apiServerConfig = cfg.api[env.api_env];
-/*
-switch(env.api_env) {
-  default:
-  case 'dev-local':
-    apiServerConfig = {tls: 0, port: 4000, host: 'localhost'};
-    break;
-  case 'dev-remote':
-    apiServerConfig = {tls: 1, port: 4322, host: 'dev.vpatlas.org'};
-    break;
-  case 'production':
-  case 'prod':
-    apiServerConfig = {tls: 1, port: 4322, host: 'vpatlas.org'};
-    break;
-}
-*/
 
 /* Command-Line Arguments Processing
  These are processed without prefixed "-"
@@ -60,15 +45,21 @@ for (var i=0; i<process.argv.length; i++) {
       apiServerConfig.port = arg;
       break;
     case "dev-remote":
+      /*
       apiServerConfig.tls = 1;
       apiServerConfig.port = 4322;
       apiServerConfig.host = 'dev.vpatlas.org';
+      */
+      apiServerConfig = cfg.api["dev-remote"];
       break;
     case "production":
     case "prod":
+      /*
       apiServerConfig.tls = 1;
       apiServerConfig.port = 4322;
       apiServerConfig.host = 'vpatlas.org';
+      */
+      apiServerConfig = cfg.api["prod"];
       break;
 	}
 }
