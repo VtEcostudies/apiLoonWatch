@@ -43,6 +43,8 @@ function jwt() {
 
             { url: /^\/loonwatch\/survey\/*/, methods: ['GET','PUT','POST','DELETE'] },
 
+            { url: /^\/aws_s3\/bucket\/*/, methods: ['GET'] },
+
             //for testing. remove these in production.
             //{ url: /^\/survey\/.*/, methods: ['POST'] },
             //{ url: /^\/visit\/.*/, methods: ['POST'] }

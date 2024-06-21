@@ -100,7 +100,7 @@ try {
   app.use('/user', require('./apiUser/user.routes')); //postgres user db
   app.use('/info', require('./vtInfo/vtInfo.routes')); //postgres vermont data - counties, towns, etc.
   app.use('/util', require('./apiUtility/utils.routes')); //utils to test API features like where clause handling
-  app.use('/aws/s3', require('./apiUtility/awsS3Info.routes')); //get connection credentials for aws s3 bucket by bucketName
+  app.use('/aws_s3', require('./apiUtility/awsS3Info.routes')); //get connection credentials for aws s3 bucket by bucketName
   app.use('/parcel', require('./vcgiMapData/vcgiParcel.routes')); //get parcel map geoJSON
   app.use('/loonwatch', require('./ingest/ingest.routes')); //postgres ingest db
   app.use('/loonwatch/survey', require('./survey/survey.routes')); //postgres survey db
