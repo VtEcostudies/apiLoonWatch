@@ -430,11 +430,11 @@ function create(body) {
 }
 
 /*
-  UPDATE an existing loonwatch_event
+  UPDATE an existing loonwatch_event by UUID
 */
-function update(id, body) {
-  var queryColumns = pgUtil.parseColumns(body, 2, [id], tableColumns['loonwatch_event']);
-  text = `update loonwatch_event set (${queryColumns.named}) = (${queryColumns.numbered}) where lweventid=$1 returning lweventid`;
+function update(uuid, body) {
+  var queryColumns = pgUtil.parseColumns(body, 2, [uuid], tableColumns['loonwatch_event']);
+  text = `update loonwatch_event set (${queryColumns.named}) = (${queryColumns.numbered}) where lweventuuid=$1 returning lweventid`;
   console.log(text, queryColumns.values);
   return new Promise((resolve, reject) => {
     query(text, queryColumns.values)
@@ -502,6 +502,6 @@ function upsertObservations(lweventid=0, jsonArr=[], update=0) {
   }); //end Promise
 }
 
-async function _delete(id) {
-    return await query(`DELETE FROM loonwatch_event CASCADE WHERE lweventid=$1;`, [id]);
+async function _delete(uuid) {
+    return await query(`DELETE FROM loonwatch_event CASCADE WHERE lweventuuid=$1;`, [uuid]);
 }

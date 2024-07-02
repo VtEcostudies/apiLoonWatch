@@ -32,8 +32,8 @@ router.post('/s123/all', postS123All);
 router.post('/s123/abort', postS123Abort);
 router.post('/upload', upFile.single('surveyUploadFile'), upload);
 router.post('/', create);
-router.put('/:id', update);
-router.delete('/:id', _delete);
+router.put('/uuid', update);
+router.delete('/uuid', _delete);
 
 module.exports = router;
 
@@ -235,7 +235,7 @@ function getShapeFile(req, res, next) {
 }
 
 function create(req, res, next) {
-    console.log(`create req.body:`);
+    console.log(`survey.routes.create req.body:`);
     console.dir(req.body);
     service.create(req.body)
         .then((item) => {res.json(item);})
@@ -247,20 +247,21 @@ function create(req, res, next) {
 
 function update(req, res, next) {
     console.log('survey.routes.update', req.body);
-    service.update(req.params.id, req.body)
+    service.update(req.body.uuid, req.body)
         .then((item) => {res.json(item);})
         .catch(err => {
             console.log('survey.routes.update | error: ' , err);
-            if (err.code == 23505 && err.constraint == 'vpSurvey_pkey') {
+            if (err.code == 23505) {
                 err.name = 'UniquenessConstraintViolation';
-                err.message = `Review ID '${req.body.reviewId}' is already taken. Please choose a different Review ID.`;
+                err.message = `Constraint violated: ${err.constraint}`;
             }
             next(err);
         });
 }
 
 function _delete(req, res, next) {
-    service.delete(req.params.id)
+    console.log(`survey.routes.delete req.body:`);
+    service.delete(req.body.uuid)
         .then(() => res.json({}))
         .catch(err => next(err));
 }
