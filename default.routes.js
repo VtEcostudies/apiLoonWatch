@@ -18,6 +18,7 @@ function defRes(req, res, next) {
     <p><a href="${req.protocol}://${req.headers.host}/info/lake">LoonWatch Survey Locations</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/waterBody">Vermont Water Bodies</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/bodyLake">Loon Locations & Water Bodies</a></p>
+    <p><a href="${req.protocol}://${req.headers.host}/info/bodyLakeGeo">Loon Locations & Water Bodies with Geometries</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/towns">Vermont Towns</a></p>
     <p><a href="${req.protocol}://${req.headers.host}/info/counties">Vermont Counties</a></p>
     `;

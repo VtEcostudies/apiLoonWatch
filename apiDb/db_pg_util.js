@@ -106,6 +106,7 @@ function whereClause(params={}, staticColumns=[], clause='WHERE') {
             if ('<'==arr[0] && '='==opr) {opr = '<'; val = arr.slice(1).join('');}
             if ('>'==arr[0] && '='==opr) {opr = '>'; val = arr.slice(1).join('');}
             if ('!'==arr[0] && '='==opr) {opr = '!='; val = arr.slice(1).join('');}
+            if ('!'==arr[0] && 'LIKE'==opr) {opr = 'NOT LIKE'; val = arr.slice(1).join('');}
             if (!Array.isArray(val) && val.toLowerCase()=='null') { //null value requires special operators
               opr = opr==='!=' ? ' IS NOT NULL' : ' IS NULL';
             }

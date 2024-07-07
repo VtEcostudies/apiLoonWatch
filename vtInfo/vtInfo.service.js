@@ -12,14 +12,16 @@ module.exports = {
 	getTowns,
 	getTown,
     getTable,
-    getBodyLake
+    getBodyLake,
+    getBodyLakeGeo
 };
 
 const tables = [
     "vt_town",
     "vt_county",
     "vt_loon_locations",
-    "vt_water_body"
+    "vt_water_body",
+    "vt_water_body_geo"
 ];
 for (i=0; i<tables.length; i++) {
 pgUtil.getColumns(tables[i], staticColumns) //run it once on init: to create the array here. also displays on console.
@@ -92,6 +94,33 @@ wbcenterlatitude,
 wbcenterlongitude
 from vt_loon_locations ll
 full outer join vt_water_body wb on wbtextid=waterbodyid
+${where.text} ${order}`;
+    return await query(text, where.values);
+}
+
+//ST_AsGeoJSON(lg.geom)::json As geometry
+
+async function getBodyLakeGeo(reqQry) {
+    const where = pgUtil.whereClause(reqQry, staticColumns);
+    const order = reqQry.orderBy ? `ORDER BY ${reqQry.ordBy}` : '';
+    const text = `
+select
+locationname,
+locationtown,
+locationregion,
+exportname,
+wbtextid,
+wbofficialname,
+wbregion,
+wbarea,
+wbfullname,
+wbtype,
+gisacres,
+ST_AsGeoJSON(ST_Centroid(wkb_geometry))::json AS wbcentroid,
+ST_AsGeoJSON(wkb_geometry)::json AS wbpolygon
+from vt_loon_locations ll
+full outer join vt_water_body wb on wb.wbtextid=waterbodyid
+join vt_water_body_geo wg on wb.wbtextid=wg.lakeid
 ${where.text} ${order}`;
     return await query(text, where.values);
 }

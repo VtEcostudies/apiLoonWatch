@@ -13,6 +13,7 @@ router.get('/lake', getLake);
 router.get('/waterBody', getBody);
 router.get('/waterBody/:id', getBody);
 router.get('/bodyLake', getBodyLake);
+router.get('/bodyLakeGeo', getBodyLakeGeo);
 
 module.exports = router;
 
@@ -74,6 +75,14 @@ function getBody(req, res, next) {
 
 function getBodyLake(req, res, next) {
     vtInfoService.getBodyLake(req.query)
+        .then(data => {
+            data ? res.json({'rowCount': data.rows.length, 'rows': data.rows}) : res.sendStatus(404);
+        })
+        .catch(err => next(err));
+}
+
+function getBodyLakeGeo(req, res, next) {
+    vtInfoService.getBodyLakeGeo(req.query)
         .then(data => {
             data ? res.json({'rowCount': data.rows.length, 'rows': data.rows}) : res.sendStatus(404);
         })
