@@ -153,7 +153,7 @@ async function getOccupied(params={}) {
 async function getStats(params={}) {
   var where = pgUtil.whereClause(params, staticColumns, 'AND');
   var text = `
-  SELECT wbRegion AS "regionName", "countyName", "townName", wbTextId, wbOfficialName, locationName as "lakeName", wbArea,
+  SELECT wbRegion AS "regionName", "countyName", "townName", wbTextId, wbOfficialName, locationName as "lakeName", gisacres,
   (SELECT MAX(DATE_PART('YEAR', lwIngestDate)) AS "lastOccupied"
     FROM loonwatch_ingest
     WHERE lwIngestLocation=locationName
@@ -176,14 +176,15 @@ async function getStats(params={}) {
     FULL JOIN vt_loon_locations ll on ll.waterBodyId=wb.wbTextId
     FULL JOIN loonWatch_ingest li ON ll.locationName=li.lwingestlocation
     FULL JOIN vt_town on wbTownName="townName"
+    JOIN vt_water_body_geo wg on wb.wbtextid=wg.lakeid
     JOIN vt_county ON "govCountyId"="townCountyId"
   --WHERE locationName LIKE 'Memphremago%'
   --WHERE "townName" = 'Derby'
   --WHERE "countyName" = 'Orleans'
   --WHERE wbRegion LIKE 'North%'
   ${where.text}
-  GROUP BY wbRegion, "countyName", "townName", wbTextId, wbOfficialName, locationName, wbArea
-  ORDER BY wbRegion, "countyName", "townName", wbTextId, wbOfficialName, locationName, wbArea`;
+  GROUP BY wbRegion, "countyName", "townName", wbTextId, wbOfficialName, locationName, gisacres
+  ORDER BY wbRegion, "countyName", "townName", wbTextId, wbOfficialName, locationName, gisacres`;
   console.log(text, where.values);
   return await query(text, where.values);
 }

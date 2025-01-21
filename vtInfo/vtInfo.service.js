@@ -75,6 +75,10 @@ async function getTable(reqQry, table, ordByCol=false, idColumn=false, idValue=f
     }
 }
 
+/*
+    Get Combined VT Water Bodies and Loon Locations combined with Geo Area and pgCentroid lat/lon
+    Water bodies are stored in Well Known Binary (WKB) format.
+*/
 async function getBodyLake(reqQry) {
     const where = pgUtil.whereClause(reqQry, staticColumns);
     const order = reqQry.orderBy ? `ORDER BY ${reqQry.ordBy}` : '';
@@ -86,20 +90,31 @@ locationregion,
 exportname,
 wbtextid,
 wbofficialname,
+wbtownname,
 wbregion,
 wbarea,
 wbfullname,
 wbtype,
 wbcenterlatitude,
-wbcenterlongitude
+wbcenterlongitude,
+ST_Y(ST_Centroid(wkb_geometry)) AS pgcentroidlat,
+ST_X(ST_Centroid(wkb_geometry)) AS pgcentroidlon,
+gisacres
 from vt_loon_locations ll
 full outer join vt_water_body wb on wbtextid=waterbodyid
+join vt_water_body_geo wg on wb.wbtextid=wg.lakeid
 ${where.text} ${order}`;
+    console.log('vtInfo.service=>getBodyLake reqQuery:', reqQry, 'pgQuery', text, where.values);
     return await query(text, where.values);
 }
 
-//ST_AsGeoJSON(lg.geom)::json As geometry
-
+/*
+    Get Combined VT Water Bodies and Loon Locations combined with PostGIS geometries
+    Water bodies are stored in Well Known Binary (WKB) format.
+    Convert WKB to m^2 to acres 2 ways: pgGeography and stTransform using VT's UTM zone
+    Vermont is UTM Zone 18/19, mostly 18 except for the far NorthEast, which is 19
+    Those checks suggest that the source file's 'gisacres' is sufficiently accurate.
+*/
 async function getBodyLakeGeo(reqQry) {
     const where = pgUtil.whereClause(reqQry, staticColumns);
     const order = reqQry.orderBy ? `ORDER BY ${reqQry.ordBy}` : '';
@@ -111,15 +126,19 @@ locationregion,
 exportname,
 wbtextid,
 wbofficialname,
-wbregion,
-wbarea,
 wbfullname,
+wbtownname,
+wbregion,
 wbtype,
 gisacres,
-ST_AsGeoJSON(ST_Centroid(wkb_geometry))::json AS wbcentroid,
-ST_AsGeoJSON(wkb_geometry)::json AS wbpolygon
+--ST_SRID(wkb_geometry) as pgsrid,
+--ST_Area(wkb_geometry) AS pgarea_wkb,
+ST_Area(ST_GeogFromWKB(wkb_geometry))*0.0002471054 AS pgarea_geography,
+ST_Area(ST_Transform(wkb_geometry,32618))*0.0002471054 AS pgarea_transform,
+ST_AsGeoJSON(ST_Centroid(wkb_geometry))::json AS pgcentroid,
+ST_AsGeoJSON(wkb_geometry)::json AS pgpolygon
 from vt_loon_locations ll
-full outer join vt_water_body wb on wb.wbtextid=waterbodyid
+full outer join vt_water_body wb on wb.wbtextid=ll.waterbodyid
 join vt_water_body_geo wg on wb.wbtextid=wg.lakeid
 ${where.text} ${order}`;
     return await query(text, where.values);
