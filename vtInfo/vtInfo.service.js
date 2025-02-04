@@ -133,10 +133,10 @@ wbtype,
 gisacres,
 --ST_SRID(wkb_geometry) as pgsrid,
 --ST_Area(wkb_geometry) AS pgarea_wkb,
-ST_Area(ST_GeogFromWKB(wkb_geometry))*0.0002471054 AS pgarea_geography,
-ST_Area(ST_Transform(wkb_geometry,32618))*0.0002471054 AS pgarea_transform,
-ST_AsGeoJSON(ST_Centroid(wkb_geometry))::json AS pgcentroid,
-ST_AsGeoJSON(wkb_geometry)::json AS pgpolygon
+ST_Area(ST_GeogFromWKB(wkb_geometry))*0.0002471054 AS pgacres_geography,
+ST_Area(ST_Transform(wkb_geometry,32618))*0.0002471054 AS pgacres_transform,
+ST_AsGeoJSON(ST_Centroid(wkb_geometry))::json AS wbcentroid,
+ST_AsGeoJSON(wkb_geometry)::json AS wbpolygon
 from vt_loon_locations ll
 full outer join vt_water_body wb on wb.wbtextid=ll.waterbodyid
 join vt_water_body_geo wg on wb.wbtextid=wg.lakeid
